@@ -57,3 +57,18 @@ If Railway/Railpack cannot auto-detect your app at the repo root, configure the 
 - Backend service: set `RAILPACK_CONFIG_FILE=railpack.backend.json`
 
 Then clear any conflicting custom build/start commands and redeploy.
+
+## Railway (Dockerfile) deployment
+
+If you'd rather avoid auto-detection entirely, deploy each service using its Dockerfile:
+
+- Frontend service:
+  - Root / Project Directory: `frontend`
+  - Builder: Dockerfile
+  - Dockerfile: `Dockerfile`
+  - Exposes HTTP on `$PORT` via `frontend/server.mjs`
+- Backend service:
+  - Root / Project Directory: `backend`
+  - Builder: Dockerfile
+  - Dockerfile: `Dockerfile`
+  - Exposes HTTP on `$PORT` (default `8080`) via Express
