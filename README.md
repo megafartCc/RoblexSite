@@ -63,12 +63,12 @@ Then clear any conflicting custom build/start commands and redeploy.
 If you'd rather avoid auto-detection entirely, deploy each service using its Dockerfile:
 
 - Frontend service:
-  - Root / Project Directory: `frontend`
   - Builder: Dockerfile
-  - Dockerfile: `Dockerfile`
+  - Root / Project Directory: `.`
+  - Dockerfile: `frontend/Dockerfile`
   - Exposes HTTP on `$PORT` via `frontend/server.mjs`
 - Backend service:
-  - Root / Project Directory: `backend`
   - Builder: Dockerfile
-  - Dockerfile: `Dockerfile`
+  - Root / Project Directory: `.`
+  - Dockerfile: `backend/Dockerfile`
   - Exposes HTTP on `$PORT` (default `8080`) via Express
