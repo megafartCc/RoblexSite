@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import type { RowDataPacket } from "mysql2";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
@@ -11,7 +12,7 @@ const loginSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
-type UserRow = {
+type UserRow = RowDataPacket & {
   id: number;
   email: string;
   password_hash: string;
