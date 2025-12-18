@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "provider": "node",
+  "steps": {
+    "install": {
+      "inputs": [
+        { "image": "node:20-slim" },
+        { "local": true, "include": ["."] }
+      ],
+      "commands": [{ "cmd": "cd frontend && npm install" }]
+    },
+    "build": {
+      "inputs": [{ "step": "install", "include": ["."] }],
+      "commands": [{ "cmd": "cd frontend && npm run build" }]
+    }
+  },
+  "deploy": {
+    "base": { "image": "node:20-slim" },
+    "inputs": [
+      { "step": "build", "include": ["frontend/dist", "frontend/server.mjs"] }
+    ],
+    "startCommand": "node frontend/server.mjs"
+  }
+}
+

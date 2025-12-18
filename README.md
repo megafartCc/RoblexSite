@@ -48,3 +48,12 @@ Expose `backend/dist/server.js` on Railway as a Node service (set start command 
 1. Implement authentication + domain logic inside `backend/src`.
 2. Consume the backend API from the React app via environment-based base URLs.
 3. Add CI (e.g., GitHub Actions) to lint/build both services on pull requests.
+
+## Railway (Railpack) deployment
+
+If Railway/Railpack cannot auto-detect your app at the repo root, configure the service to use a Railpack config file:
+
+- Frontend service: set `RAILPACK_CONFIG_FILE=railpack.frontend.json`
+- Backend service: set `RAILPACK_CONFIG_FILE=railpack.backend.json`
+
+Then clear any conflicting custom build/start commands and redeploy.
