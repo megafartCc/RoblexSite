@@ -101,13 +101,7 @@ export function LandingPage() {
       </header>
 
       <main className="landing-main">
-        <section className="hero-placeholder">
-          <div className="hero-copy">
-            <p className="eyebrow">Customer site</p>
-            <h1>Experience Roblex with a cleaner navigation.</h1>
-            <p className="lede">The top bar is now reusable for your landing hero. Customize sections below as needed.</p>
-          </div>
-        </section>
+        <div className="scroll-area" aria-hidden="true" />
       </main>
     </div>
   );
