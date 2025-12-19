@@ -14,9 +14,21 @@ export async function initDatabase() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
 
-  await pool.query(`
-    ALTER TABLE users
-      ADD COLUMN IF NOT EXISTS two_factor_secret VARCHAR(255) NULL,
-      ADD COLUMN IF NOT EXISTS two_factor_enabled TINYINT(1) NOT NULL DEFAULT 0;
-  `);
+  try {
+    await pool.query(`ALTER TABLE users ADD COLUMN two_factor_secret VARCHAR(255) NULL`);
+  } catch (error: any) {
+    if (error?.code !== "ER_DUP_FIELDNAME") {
+      throw error;
+    }
+  }
+
+  try {
+    await pool.query(
+      `ALTER TABLE users ADD COLUMN two_factor_enabled TINYINT(1) NOT NULL DEFAULT 0`,
+    );
+  } catch (error: any) {
+    if (error?.code !== "ER_DUP_FIELDNAME") {
+      throw error;
+    }
+  }
 }
