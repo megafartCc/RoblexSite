@@ -8,8 +8,15 @@ export async function initDatabase() {
       email VARCHAR(255) NOT NULL UNIQUE,
       password_hash VARCHAR(255) NOT NULL,
       role VARCHAR(50) NULL,
+      two_factor_secret VARCHAR(255) NULL,
+      two_factor_enabled TINYINT(1) NOT NULL DEFAULT 0,
       PRIMARY KEY (id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
-}
 
+  await pool.query(`
+    ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS two_factor_secret VARCHAR(255) NULL,
+      ADD COLUMN IF NOT EXISTS two_factor_enabled TINYINT(1) NOT NULL DEFAULT 0;
+  `);
+}

@@ -54,8 +54,11 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [twoFactorCode, setTwoFactorCode] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [step, setStep] = useState<"credentials" | "twofactor">("credentials");
+  const [tempToken, setTempToken] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -68,48 +71,97 @@ export function LoginPage() {
     event.preventDefault();
     setMessage(null);
 
-    if (!email.includes("@") || !email.includes(".")) {
-      setMessage("Please enter a valid email address.");
-      return;
-    }
+    if (step === "credentials") {
+      if (!email.includes("@") || !email.includes(".")) {
+        setMessage("Please enter a valid email address.");
+        return;
+      }
 
-    if (password.length < 8) {
-      setMessage("Password must be at least 8 characters long.");
-      return;
-    }
+      if (password.length < 8) {
+        setMessage("Password must be at least 8 characters long.");
+        return;
+      }
 
-    setSubmitting(true);
+      setSubmitting(true);
 
-    try {
-      const res = await fetch(
-        `${apiBase}/auth/` + (mode === "login" ? "login" : "register"),
-        {
+      try {
+        const res = await fetch(
+          `${apiBase}/auth/` + (mode === "login" ? "login" : "register"),
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email, password }),
+          },
+        );
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          const errorText = (data && (data.message || data.error)) || "Something went wrong.";
+          setMessage(errorText);
+          return;
+        }
+
+        if (mode === "login" && data.requires2fa && data.tempToken) {
+          setTempToken(data.tempToken);
+          setStep("twofactor");
+          setMessage("Enter the 6-digit code from your authenticator app.");
+          return;
+        }
+
+        if (mode === "login") {
+          setMessage("Logged in successfully.");
+        } else {
+          setMessage("Admin account created. You can now log in.");
+          setMode("login");
+        }
+      } catch (error) {
+        setMessage("Network error. Please try again.");
+      } finally {
+        setSubmitting(false);
+      }
+    } else if (step === "twofactor") {
+      if (!tempToken) {
+        setMessage("Missing 2FA session. Please log in again.");
+        setStep("credentials");
+        return;
+      }
+
+      if (!/^[0-9]{6}$/.test(twoFactorCode)) {
+        setMessage("Please enter a valid 6-digit code.");
+        return;
+      }
+
+      setSubmitting(true);
+
+      try {
+        const res = await fetch(`${apiBase}/auth/2fa/verify`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ email, password }),
-        },
-      );
+          body: JSON.stringify({ token: twoFactorCode, tempToken }),
+        });
 
-      const data = await res.json().catch(() => ({}));
+        const data = await res.json().catch(() => ({}));
 
-      if (!res.ok) {
-        const errorText = (data && (data.message || data.error)) || "Something went wrong.";
-        setMessage(errorText);
-        return;
+        if (!res.ok) {
+          const errorText = (data && (data.message || data.error)) || "Invalid 2FA code.";
+          setMessage(errorText);
+          return;
+        }
+
+        setMessage("Logged in successfully with 2FA.");
+        setStep("credentials");
+        setTempToken(null);
+        setTwoFactorCode("");
+      } catch (error) {
+        setMessage("Network error. Please try again.");
+      } finally {
+        setSubmitting(false);
       }
-
-      if (mode === "login") {
-        setMessage("Logged in successfully.");
-      } else {
-        setMessage("Admin account created. You can now log in.");
-        setMode("login");
-      }
-    } catch (error) {
-      setMessage("Network error. Please try again.");
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -138,68 +190,116 @@ export function LoginPage() {
         </header>
 
         <div className="flex w-full flex-col gap-6 bg-collection-1-sub-default p-6">
-          <div className="flex w-full flex-col gap-2">
-            <div className="flex h-[52px] items-center justify-center rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
-              <label htmlFor="email" className="sr-only">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                placeholder="Email"
-                required
-                aria-required="true"
-                className="w-full bg-transparent text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
-              />
+          {step === "credentials" ? (
+            <>
+              <div className="flex w-full flex-col gap-2">
+                <div className="flex h-[52px] items-center justify-center rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
+                  <label htmlFor="email" className="sr-only">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="Email"
+                    required
+                    aria-required="true"
+                    className="w-full bg-transparent text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
+                  />
+                </div>
+
+                <div className="flex h-[52px] w-full items-center justify-between rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
+                  <label htmlFor="password" className="sr-only">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="Password"
+                    required
+                    aria-required="true"
+                    className="mr-3 w-full bg-transparent text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
+                  />
+                  <button
+                    type="button"
+                    className="text-collection-1-glyphs-body transition-opacity hover:opacity-80"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  >
+                    <EyeIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex w-full flex-col gap-3">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-4 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-buttons-glyphs transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  {mode === "login" ? "Continue" : "Sign up"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode((prev) => (prev === "login" ? "signup" : "login"));
+                    setMessage(null);
+                  }}
+                  className="text-sm font-medium text-collection-1-glyphs-body/80 underline-offset-4 hover:underline"
+                >
+                  {mode === "login" ? "Sign up (temporary admin)" : "Back to login"}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex w-full flex-col gap-3">
+              <div className="flex h-[52px] items-center justify-center rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
+                <label htmlFor="twofactor" className="sr-only">
+                  2FA code
+                </label>
+                <input
+                  id="twofactor"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  value={twoFactorCode}
+                  onChange={(event) => setTwoFactorCode(event.target.value.replace(/\D/g, ""))}
+                  placeholder="6-digit code"
+                  required
+                  aria-required="true"
+                  className="w-full bg-transparent text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
+                />
+              </div>
+
+              <div className="flex w-full flex-col gap-3">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-4 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-buttons-glyphs transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  Verify code
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("credentials");
+                    setTempToken(null);
+                    setTwoFactorCode("");
+                    setMessage(null);
+                  }}
+                  className="text-sm font-medium text-collection-1-glyphs-body/80 underline-offset-4 hover:underline"
+                >
+                  Back to login
+                </button>
+              </div>
             </div>
-
-            <div className="flex h-[52px] w-full items-center justify-between rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="Password"
-                required
-                aria-required="true"
-                className="mr-3 w-full bg-transparent text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
-              />
-              <button
-                type="button"
-                className="text-collection-1-glyphs-body transition-opacity hover:opacity-80"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                onClick={() => setShowPassword((prev) => !prev)}
-              >
-                <EyeIcon className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="flex w-full flex-col gap-3">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-4 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-buttons-glyphs transition-opacity hover:opacity-90 disabled:opacity-60"
-            >
-              {mode === "login" ? "Continue" : "Sign up"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setMode((prev) => (prev === "login" ? "signup" : "login"));
-                setMessage(null);
-              }}
-              className="text-sm font-medium text-collection-1-glyphs-body/80 underline-offset-4 hover:underline"
-            >
-              {mode === "login" ? "Sign up (temporary admin)" : "Back to login"}
-            </button>
-          </div>
+          )}
         </div>
 
         <div className="flex w-full items-center justify-between border-t border-collection-1-stroke bg-collection-1-impr-default px-6 py-4">
