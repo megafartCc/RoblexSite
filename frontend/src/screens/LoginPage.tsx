@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { Notification } from "../components/Notification";
 
 type IconProps = {
@@ -77,6 +78,14 @@ export function LoginPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const [showSetup, setShowSetup] = useState(false);
+  const [setupEmail, setSetupEmail] = useState("");
+  const [setupPassword, setSetupPassword] = useState("");
+  const [setupOtpauthUrl, setSetupOtpauthUrl] = useState<string | null>(null);
+  const [setupSecret, setSetupSecret] = useState<string | null>(null);
+  const [setupCode, setSetupCode] = useState("");
+  const [setupMessage, setSetupMessage] = useState<string | null>(null);
+  const [setupSubmitting, setSetupSubmitting] = useState(false);
 
   useEffect(() => {
     if (step === "twofactor" && inputRefs.current[0]) {
@@ -191,6 +200,92 @@ export function LoginPage() {
     }
   };
 
+  const handleSetupGenerate = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSetupMessage(null);
+
+    if (!setupEmail.includes("@") || !setupEmail.includes(".")) {
+      setSetupMessage("Please enter a valid email address.");
+      return;
+    }
+
+    if (setupPassword.length < 8) {
+      setSetupMessage("Password must be at least 8 characters long.");
+      return;
+    }
+
+    setSetupSubmitting(true);
+
+    try {
+      const res = await fetch(`${apiBase}/auth/2fa/setup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: setupEmail, password: setupPassword }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const errorText = (data && (data.message || data.error)) || "Failed to start 2FA setup.";
+        setSetupMessage(errorText);
+        return;
+      }
+
+      setSetupOtpauthUrl(data.otpauthUrl ?? null);
+      setSetupSecret(data.secret ?? null);
+      setSetupMessage(
+        "Scan the QR or enter the secret in your authenticator app, then enter a 6-digit code to confirm.",
+      );
+    } catch {
+      setSetupMessage("Network error. Please try again.");
+    } finally {
+      setSetupSubmitting(false);
+    }
+  };
+
+  const handleSetupConfirm = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSetupMessage(null);
+
+    if (!setupEmail || !setupSecret) {
+      setSetupMessage("Start 2FA setup first.");
+      return;
+    }
+
+    if (!/^[0-9]{6}$/.test(setupCode)) {
+      setSetupMessage("Please enter a valid 6-digit code.");
+      return;
+    }
+
+    setSetupSubmitting(true);
+
+    try {
+      const res = await fetch(`${apiBase}/auth/2fa/confirm`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: setupEmail, token: setupCode }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const errorText = (data && (data.message || data.error)) || "Failed to confirm 2FA.";
+        setSetupMessage(errorText);
+        return;
+      }
+
+      setSetupMessage("2FA has been enabled. You can now log in with your 6-digit code.");
+    } catch {
+      setSetupMessage("Network error. Please try again.");
+    } finally {
+      setSetupSubmitting(false);
+    }
+  };
+
   const handleCodeChange = (value: string, index: number) => {
     const digits = value.replace(/\D/g, "");
 
@@ -266,114 +361,114 @@ export function LoginPage() {
       className="relative flex min-h-screen w-full items-center justify-center bg-collection-1-background px-4"
       data-collection-1-mode={theme}
     >
-      {step === "credentials" ? (
-        <form
-          className="flex w-full max-w-md flex-col items-start overflow-hidden rounded-xl border-2 border-collection-1-stroke bg-collection-1-sub-default shadow-[0_4px_16px_rgba(17,17,17,0.04)]"
-          aria-label="Admin login form"
-          onSubmit={handleSubmit}
-        >
-          <header className="flex h-20 w-full items-center justify-between border-b border-collection-1-stroke bg-collection-1-sub-default px-6">
-            <h1 className="text-[28px] font-semibold leading-7 tracking-[-0.84px] text-collection-1-glyphs-title">
-              {mode === "login" ? "Admin login" : "Admin sign up"}
-            </h1>
-            <button
-              type="button"
-              className="flex h-8 w-8 items-center justify-center rounded-md bg-collection-1-sub-default transition-opacity hover:opacity-80"
-              aria-label="Toggle theme"
-              onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
-            >
-              <SunIcon className="h-6 w-6 text-collection-1-glyphs-title" />
-            </button>
-          </header>
+      <div className="w-full max-w-[419px] space-y-6">
+        {step === "credentials" ? (
+          <form
+            className="flex w-full flex-col items-start overflow-hidden rounded-xl border-2 border-collection-1-stroke bg-collection-1-sub-default shadow-[0_4px_16px_rgba(17,17,17,0.04)]"
+            aria-label="Admin login form"
+            onSubmit={handleSubmit}
+          >
+            <header className="flex h-20 w-full items-center justify-between border-b border-collection-1-stroke bg-collection-1-sub-default px-6">
+              <h1 className="text-[28px] font-semibold leading-7 tracking-[-0.84px] text-collection-1-glyphs-title">
+                {mode === "login" ? "Admin login" : "Admin sign up"}
+              </h1>
+              <button
+                type="button"
+                className="flex h-8 w-8 items-center justify-center rounded-md bg-collection-1-sub-default transition-opacity hover:opacity-80"
+                aria-label="Toggle theme"
+                onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+              >
+                <SunIcon className="h-6 w-6 text-collection-1-glyphs-title" />
+              </button>
+            </header>
 
-          <div className="flex w-full flex-col gap-6 bg-collection-1-sub-default p-6">
-            <div className="flex w-full flex-col gap-2">
-              <div className="flex h-[52px] items-center justify-center rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
-                <label htmlFor="email" className="sr-only">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="Email"
-                  required
-                  aria-required="true"
-                  className="w-full bg-transparent text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
-                />
+            <div className="flex w-full flex-col gap-6 bg-collection-1-sub-default p-6">
+              <div className="flex w-full flex-col gap-2">
+                <div className="flex h-[52px] items-center justify-center rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
+                  <label htmlFor="email" className="sr-only">
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder="Email"
+                    required
+                    aria-required="true"
+                    className="w-full bg-transparent text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
+                  />
+                </div>
+
+                <div className="flex h-[52px] w-full items-center justify-between rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
+                  <label htmlFor="password" className="sr-only">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    placeholder="Password"
+                    required
+                    aria-required="true"
+                    className="mr-3 w-full bg-transparent text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
+                  />
+                  <button
+                    type="button"
+                    className="text-collection-1-glyphs-body transition-opacity hover:opacity-80"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  >
+                    <EyeIcon className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
 
-              <div className="flex h-[52px] w-full items-center justify-between rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
-                <label htmlFor="password" className="sr-only">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Password"
-                  required
-                  aria-required="true"
-                  className="mr-3 w-full bg-transparent text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
-                />
+              <div className="flex w-full flex-col gap-3">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-4 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-buttons-glyphs transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  {mode === "login" ? "Continue" : "Sign up"}
+                </button>
+
                 <button
                   type="button"
-                  className="text-collection-1-glyphs-body transition-opacity hover:opacity-80"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  onClick={() => setShowPassword((prev) => !prev)}
+                  onClick={() => {
+                    setMode((prev) => (prev === "login" ? "signup" : "login"));
+                    setMessage(null);
+                  }}
+                  className="text-sm font-medium text-collection-1-glyphs-body/80 underline-offset-4 hover:underline"
                 >
-                  <EyeIcon className="h-5 w-5" />
+                  {mode === "login" ? "Sign up (temporary admin)" : "Back to login"}
                 </button>
               </div>
             </div>
 
-            <div className="flex w-full flex-col gap-3">
-              <button
-                type="submit"
-                disabled={submitting}
-                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-4 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-buttons-glyphs transition-opacity hover:opacity-90 disabled:opacity-60"
-              >
-                {mode === "login" ? "Continue" : "Sign up"}
-              </button>
-
+            <div className="flex w-full items-center justify-between border-t border-collection-1-stroke bg-collection-1-impr-default px-6 py-4">
               <button
                 type="button"
-                onClick={() => {
-                  setMode((prev) => (prev === "login" ? "signup" : "login"));
-                  setMessage(null);
-                }}
-                className="text-sm font-medium text-collection-1-glyphs-body/80 underline-offset-4 hover:underline"
+                className="inline-flex items-center gap-2 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body transition-opacity hover:opacity-80"
+                aria-label="Remember this device"
+                aria-pressed={rememberMe}
+                onClick={() => setRememberMe((prev) => !prev)}
               >
-                {mode === "login" ? "Sign up (temporary admin)" : "Back to login"}
+                <div
+                  className={`h-6 w-6 rounded-md border border-collection-1-stroke bg-gradient-to-br from-slate-100/10 via-slate-100/40 to-slate-100/10 ${
+                    rememberMe ? "bg-collection-1-buttons-primary-default" : ""
+                  }`}
+                  role="checkbox"
+                  aria-checked={rememberMe}
+                />
+                <span>Remember me</span>
               </button>
+
+              <ChevronRightIcon className="h-5 w-5 text-collection-1-glyphs-body" />
             </div>
-          </div>
-
-          <div className="flex w-full items-center justify-between border-t border-collection-1-stroke bg-collection-1-impr-default px-6 py-4">
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body transition-opacity hover:opacity-80"
-              aria-label="Remember this device"
-              aria-pressed={rememberMe}
-              onClick={() => setRememberMe((prev) => !prev)}
-            >
-              <div
-                className={`h-6 w-6 rounded-md border border-collection-1-stroke bg-gradient-to-br from-slate-100/10 via-slate-100/40 to-slate-100/10 ${
-                  rememberMe ? "bg-collection-1-buttons-primary-default" : ""
-                }`}
-                role="checkbox"
-                aria-checked={rememberMe}
-              />
-              <span>Remember me</span>
-            </button>
-
-            <ChevronRightIcon className="h-5 w-5 text-collection-1-glyphs-body" />
-          </div>
-        </form>
-      ) : (
-        <div className="w-full max-w-[419px]">
+          </form>
+        ) : (
           <form
             className="flex w-full flex-col overflow-hidden rounded-xl border-2 border-collection-1-stroke bg-collection-1-sub-default shadow-[0_4px_16px_rgba(17,17,17,0.04)]"
             aria-label="2FA verification form"
@@ -441,8 +536,95 @@ export function LoginPage() {
               </button>
             </div>
           </form>
+        )}
+
+        <div className="rounded-xl border border-collection-1-stroke bg-collection-1-sub-default/80 p-4 shadow-[0_4px_16px_rgba(17,17,17,0.04)]">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-collection-1-glyphs-title">Set up 2FA</h2>
+            <button
+              type="button"
+              className="text-sm font-medium text-collection-1-buttons-primary-default underline-offset-4 hover:underline"
+              onClick={() => setShowSetup((prev) => !prev)}
+            >
+              {showSetup ? "Hide" : "Open"}
+            </button>
+          </div>
+
+          {showSetup && (
+            <div className="mt-4 space-y-4">
+              {setupMessage && <Notification title="2FA setup" description={setupMessage} />}
+
+              <form className="space-y-3" onSubmit={handleSetupGenerate}>
+                <div className="space-y-2">
+                  <div className="flex h-[48px] items-center rounded-lg border border-collection-1-stroke bg-collection-1-background px-3">
+                    <input
+                      type="email"
+                      placeholder="Admin email"
+                      value={setupEmail}
+                      onChange={(e) => setSetupEmail(e.target.value)}
+                      className="w-full bg-transparent text-base font-medium text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
+                    />
+                  </div>
+                  <div className="flex h-[48px] items-center rounded-lg border border-collection-1-stroke bg-collection-1-background px-3">
+                    <input
+                      type="password"
+                      placeholder="Admin password"
+                      value={setupPassword}
+                      onChange={(e) => setSetupPassword(e.target.value)}
+                      className="w-full bg-transparent text-base font-medium text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={setupSubmitting}
+                  className="flex w-full items-center justify-center rounded-lg border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-3 text-base font-semibold text-collection-1-buttons-glyphs transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  Generate 2FA secret
+                </button>
+              </form>
+
+              {setupSecret && (
+                <div className="space-y-3 border-t border-collection-1-stroke pt-3">
+                  {setupOtpauthUrl && (
+                    <div className="flex justify-center">
+                      <QRCodeSVG value={setupOtpauthUrl} size={160} />
+                    </div>
+                  )}
+                  <div className="text-sm text-collection-1-glyphs-body">
+                    Secret (manual entry):{" "}
+                    <span className="font-mono text-collection-1-glyphs-title">{setupSecret}</span>
+                  </div>
+
+                  <form className="space-y-3" onSubmit={handleSetupConfirm}>
+                    <div className="flex h-[48px] items-center rounded-lg border border-collection-1-stroke bg-collection-1-background px-3">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={6}
+                        placeholder="Enter 6-digit code"
+                        value={setupCode}
+                        onChange={(e) => setSetupCode(e.target.value.replace(/\D/g, ""))}
+                        className="w-full bg-transparent text-base font-medium text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={setupSubmitting}
+                      className="flex w-full items-center justify-center rounded-lg border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-3 text-base font-semibold text-collection-1-buttons-glyphs transition-opacity hover:opacity-90 disabled:opacity-60"
+                    >
+                      Confirm 2FA
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {message && (
         <div className="pointer-events-none fixed bottom-4 right-4 z-50 w-[377px] max-w-full animate-toast-enter">
