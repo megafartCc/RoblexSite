@@ -373,71 +373,73 @@ export function LoginPage() {
           </div>
         </form>
       ) : (
-        <div className="relative w-full max-w-xl">
-          <div
-            className="pointer-events-none absolute inset-x-6 -top-8 h-20 rounded-full bg-gradient-to-r from-fuchsia-600 via-rose-500 to-amber-400 opacity-40 blur-3xl"
-            aria-hidden="true"
-          />
+        <div className="w-full max-w-[419px]">
           <form
-            className="relative z-10 flex w-full flex-col gap-6 overflow-hidden rounded-2xl border-2 border-collection-1-stroke bg-collection-1-sub-default/90 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.3)] backdrop-blur"
+            className="flex w-full flex-col overflow-hidden rounded-xl border-2 border-collection-1-stroke bg-collection-1-sub-default shadow-[0_4px_16px_rgba(17,17,17,0.04)]"
             aria-label="2FA verification form"
             onSubmit={handleSubmit}
           >
-            <header className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <h1 className="text-[28px] font-semibold leading-7 tracking-[-0.84px] text-collection-1-glyphs-title">
-                  2-FA
-                </h1>
-              </div>
+            <header className="flex h-20 items-center justify-between border-b border-collection-1-stroke bg-collection-1-sub-default px-6">
+              <h1 className="text-[28px] font-semibold leading-7 tracking-[-0.84px] text-collection-1-glyphs-title">
+                2-FA
+              </h1>
               <button
                 type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-collection-1-stroke bg-collection-1-background text-collection-1-glyphs-title transition hover:opacity-90"
+                className="flex h-8 w-8 items-center justify-center rounded-md bg-collection-1-sub-default transition-opacity hover:opacity-80"
                 aria-label="Toggle theme"
                 onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
               >
                 {theme === "dark" ? (
-                  <MoonIcon className="h-6 w-6" />
+                  <MoonIcon className="h-6 w-6 text-collection-1-glyphs-title" />
                 ) : (
-                  <SunIcon className="h-6 w-6" />
+                  <SunIcon className="h-6 w-6 text-collection-1-glyphs-title" />
                 )}
               </button>
             </header>
 
-            <div className="flex flex-col gap-6">
-              <p className="text-base leading-6 text-collection-1-glyphs-body">
+            <div className="flex flex-col gap-6 bg-collection-1-sub-default p-6">
+              <p className="text-base font-medium leading-5 tracking-[-0.48px] text-collection-1-glyphs-body">
                 Откройте приложение аутентификатора, далее введите код, который указан на экране.
               </p>
 
-              <div className="grid grid-cols-6 gap-3">
+              <div
+                className="grid grid-cols-6 gap-2"
+                role="group"
+                aria-label="Two-factor authentication code input"
+              >
                 {code.map((value, index) => (
-                  <input
+                  <label
                     key={index}
-                    ref={(node) => {
-                      inputRefs.current[index] = node;
-                    }}
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={1}
-                    value={value}
-                    onChange={(event) => handleCodeChange(event.target.value, index)}
-                    onKeyDown={(event) => handleCodeKeyDown(event, index)}
-                    onFocus={(event) => event.target.select()}
-                    onPaste={handleCodePaste}
-                    aria-label={`Digit ${index + 1}`}
-                    className="h-[52px] w-full rounded-xl border border-collection-1-stroke bg-collection-1-background text-center text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-title transition focus:border-collection-1-buttons-primary-default focus:ring-2 focus:ring-collection-1-buttons-primary-default/60"
-                  />
+                    className="flex h-[52px] items-center justify-center rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5"
+                  >
+                    <input
+                      ref={(node) => {
+                        inputRefs.current[index] = node;
+                      }}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={1}
+                      value={value}
+                      onChange={(event) => handleCodeChange(event.target.value, index)}
+                      onKeyDown={(event) => handleCodeKeyDown(event, index)}
+                      onFocus={(event) => event.target.select()}
+                      onPaste={handleCodePaste}
+                      aria-label={`Digit ${index + 1}`}
+                      className="w-full bg-transparent text-center text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body outline-none"
+                    />
+                  </label>
                 ))}
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="mt-2 w-full rounded-2xl border border-collection-1-buttons-stroke bg-white px-4 py-3 text-lg font-semibold text-slate-900 shadow-[0_10px_40px_rgba(0,0,0,0.35)] transition hover:translate-y-[1px] hover:shadow-[0_8px_28px_rgba(0,0,0,0.3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-70"
-            >
-              Продолжить
-            </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-4 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-buttons-glyphs transition-opacity hover:opacity-90 disabled:opacity-70"
+              >
+                Продолжить
+              </button>
+            </div>
           </form>
         </div>
       )}
