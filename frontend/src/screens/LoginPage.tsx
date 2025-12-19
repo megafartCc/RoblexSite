@@ -86,7 +86,12 @@ export function LoginPage() {
   const [setupCode, setSetupCode] = useState("");
   const [setupMessage, setSetupMessage] = useState<string | null>(null);
   const [setupSubmitting, setSetupSubmitting] = useState(false);
-  const [hasSetup, setHasSetup] = useState(false);
+  const [hasSetup, setHasSetup] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("roblex-has-2fa") === "true";
+  });
+  const [messageKind, setMessageKind] = useState<"success" | "error">("error");
+  const [setupMessageKind, setSetupMessageKind] = useState<"success" | "error">("error");
 
   useEffect(() => {
     if (step === "twofactor" && inputRefs.current[0]) {
@@ -100,18 +105,40 @@ export function LoginPage() {
       ? import.meta.env.VITE_API_BASE_URL.replace(/\/+$/, "")
       : "https://roblexsite-production.up.railway.app/api";
 
+  const showAuthMessage = (text: string | null, kind: "success" | "error" = "error") => {
+    setMessage(text);
+    setMessageKind(kind);
+  };
+
+  const showSetupMessage = (text: string | null, kind: "success" | "error" = "error") => {
+    setSetupMessage(text);
+    setSetupMessageKind(kind);
+  };
+
+  const markHasSetup = (value: boolean) => {
+    setHasSetup(value);
+
+    if (typeof window !== "undefined") {
+      if (value) {
+        window.localStorage.setItem("roblex-has-2fa", "true");
+      } else {
+        window.localStorage.removeItem("roblex-has-2fa");
+      }
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setMessage(null);
+    showAuthMessage(null);
 
     if (step === "credentials") {
       if (!email.includes("@") || !email.includes(".")) {
-        setMessage("Please enter a valid email address.");
+        showAuthMessage("Please enter a valid email address.");
         return;
       }
 
       if (password.length < 8) {
-        setMessage("Password must be at least 8 characters long.");
+        showAuthMessage("Password must be at least 8 characters long.");
         return;
       }
 
@@ -133,32 +160,32 @@ export function LoginPage() {
 
         if (!res.ok) {
           const errorText = (data && (data.message || data.error)) || "Something went wrong.";
-          setMessage(errorText);
+          showAuthMessage(errorText);
           return;
         }
 
         if (mode === "login" && data.requires2fa && data.tempToken) {
           setTempToken(data.tempToken);
           setStep("twofactor");
-          setMessage("Enter the 6-digit code from your authenticator app.");
+          showAuthMessage("Enter the 6-digit code from your authenticator app.", "success");
           setCode(Array(CODE_LENGTH).fill(""));
           return;
         }
 
         if (mode === "login") {
-          setMessage("Logged in successfully.");
+          showAuthMessage("Logged in successfully.", "success");
         } else {
-          setMessage("Admin account created. You can now log in.");
+          showAuthMessage("Admin account created. You can now log in.", "success");
           setMode("login");
         }
       } catch (error) {
-        setMessage("Network error. Please try again.");
+        showAuthMessage("Network error. Please try again.");
       } finally {
         setSubmitting(false);
       }
     } else if (step === "twofactor") {
       if (!tempToken) {
-        setMessage("Missing 2FA session. Please log in again.");
+        showAuthMessage("Missing 2FA session. Please log in again.");
         setStep("credentials");
         return;
       }
@@ -166,7 +193,7 @@ export function LoginPage() {
       const twoFactorCode = code.join("");
 
       if (!/^[0-9]{6}$/.test(twoFactorCode)) {
-        setMessage("Please enter a valid 6-digit code.");
+        showAuthMessage("Please enter a valid 6-digit code.");
         return;
       }
 
@@ -185,16 +212,16 @@ export function LoginPage() {
 
         if (!res.ok) {
           const errorText = (data && (data.message || data.error)) || "Invalid 2FA code.";
-          setMessage(errorText);
+          showAuthMessage(errorText);
           return;
         }
 
-        setMessage("Logged in successfully with 2FA.");
+        showAuthMessage("Logged in successfully with 2FA.", "success");
         setStep("credentials");
         setTempToken(null);
         setCode(Array(CODE_LENGTH).fill(""));
       } catch (error) {
-        setMessage("Network error. Please try again.");
+        showAuthMessage("Network error. Please try again.");
       } finally {
         setSubmitting(false);
       }
@@ -203,15 +230,20 @@ export function LoginPage() {
 
   const handleSetupGenerate = async (event: React.FormEvent) => {
     event.preventDefault();
-    setSetupMessage(null);
+    showSetupMessage(null);
+
+    if (hasSetup) {
+      showSetupMessage("2FA is already set up for this admin. Only one setup is allowed.", "success");
+      return;
+    }
 
     if (!setupEmail.includes("@") || !setupEmail.includes(".")) {
-      setSetupMessage("Please enter a valid email address.");
+      showSetupMessage("Please enter a valid email address.");
       return;
     }
 
     if (setupPassword.length < 8) {
-      setSetupMessage("Password must be at least 8 characters long.");
+      showSetupMessage("Password must be at least 8 characters long.");
       return;
     }
 
@@ -230,18 +262,19 @@ export function LoginPage() {
 
       if (!res.ok) {
         const errorText = (data && (data.message || data.error)) || "Failed to start 2FA setup.";
-        setSetupMessage(errorText);
+        showSetupMessage(errorText);
         return;
       }
 
       setSetupOtpauthUrl(data.otpauthUrl ?? null);
       setSetupSecret(data.secret ?? null);
-      setSetupMessage(
+      showSetupMessage(
         "Scan the QR or enter the secret in your authenticator app, then enter a 6-digit code to confirm.",
+        "success",
       );
-      setHasSetup(true);
+      markHasSetup(true);
     } catch {
-      setSetupMessage("Network error. Please try again.");
+      showSetupMessage("Network error. Please try again.");
     } finally {
       setSetupSubmitting(false);
     }
@@ -249,15 +282,15 @@ export function LoginPage() {
 
   const handleSetupConfirm = async (event: React.FormEvent) => {
     event.preventDefault();
-    setSetupMessage(null);
+    showSetupMessage(null);
 
     if (!setupEmail || !setupSecret) {
-      setSetupMessage("Start 2FA setup first.");
+      showSetupMessage("Start 2FA setup first.");
       return;
     }
 
     if (!/^[0-9]{6}$/.test(setupCode)) {
-      setSetupMessage("Please enter a valid 6-digit code.");
+      showSetupMessage("Please enter a valid 6-digit code.");
       return;
     }
 
@@ -276,14 +309,14 @@ export function LoginPage() {
 
       if (!res.ok) {
         const errorText = (data && (data.message || data.error)) || "Failed to confirm 2FA.";
-        setSetupMessage(errorText);
+        showSetupMessage(errorText);
         return;
       }
 
-      setSetupMessage("2FA has been enabled. You can now log in with your 6-digit code.");
-      setHasSetup(true);
+      showSetupMessage("2FA has been enabled. You can now log in with your 6-digit code.", "success");
+      markHasSetup(true);
     } catch {
-      setSetupMessage("Network error. Please try again.");
+      showSetupMessage("Network error. Please try again.");
     } finally {
       setSetupSubmitting(false);
     }
@@ -441,7 +474,7 @@ export function LoginPage() {
                   type="button"
                   onClick={() => {
                     setMode((prev) => (prev === "login" ? "signup" : "login"));
-                    setMessage(null);
+                    showAuthMessage(null);
                   }}
                   className="text-sm font-medium text-collection-1-glyphs-body/80 underline-offset-4 hover:underline"
                 >
@@ -555,7 +588,13 @@ export function LoginPage() {
 
           {showSetup && (
             <div className="mt-4 space-y-4">
-              {setupMessage && <Notification title="2FA setup" description={setupMessage} />}
+              {setupMessage && (
+                <Notification
+                  title="2FA setup"
+                  description={setupMessage}
+                  variant={setupMessageKind}
+                />
+              )}
 
               <form className="space-y-3" onSubmit={handleSetupGenerate}>
                 <div className="space-y-2">
@@ -592,13 +631,15 @@ export function LoginPage() {
                 <div className="space-y-3 border-t border-collection-1-stroke pt-3">
                   {setupOtpauthUrl && (
                     <div className="flex justify-center">
-                      <QRCodeSVG
-                        value={setupOtpauthUrl}
-                        size={180}
-                        bgColor="#ffffff"
-                        fgColor="#000000"
-                        includeMargin
-                      />
+                      <div className="rounded-lg bg-white p-4 shadow-sm">
+                        <QRCodeSVG
+                          value={setupOtpauthUrl}
+                          size={180}
+                          bgColor="#ffffff"
+                          fgColor="#000000"
+                          includeMargin
+                        />
+                      </div>
                     </div>
                   )}
                   <div className="text-sm text-collection-1-glyphs-body">
@@ -640,6 +681,7 @@ export function LoginPage() {
           <Notification
             title={mode === "login" ? "Authorization message" : "Sign up message"}
             description={message}
+            variant={messageKind}
           />
         </div>
       )}
