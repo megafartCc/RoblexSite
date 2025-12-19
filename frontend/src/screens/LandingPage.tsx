@@ -14,6 +14,7 @@ export function LandingPage() {
     if (!navEl || !highlightEl) return;
 
     const links = Array.from(navEl.querySelectorAll<HTMLAnchorElement>(".nav-link"));
+    const listeners: Array<() => void> = [];
 
     const moveHighlight = (link: HTMLAnchorElement) => {
       const linkRect = link.getBoundingClientRect();
@@ -40,16 +41,28 @@ export function LandingPage() {
       });
     };
 
-    links.forEach((link) => link.addEventListener("mouseenter", () => moveHighlight(link)));
+    links.forEach((link) => {
+      const handler = () => moveHighlight(link);
+      link.addEventListener("mouseenter", handler);
+      listeners.push(() => link.removeEventListener("mouseenter", handler));
+    });
     navEl.addEventListener("mouseleave", handleLeave);
+    listeners.push(() => navEl.removeEventListener("mouseleave", handleLeave));
 
     return () => {
-      links.forEach((link) => link.removeEventListener("mouseenter", () => moveHighlight(link)));
-      navEl.removeEventListener("mouseleave", handleLeave);
+      listeners.forEach((fn) => fn());
     };
   }, []);
 
   useEffect(() => {
+    if (headerRef.current) {
+      gsap.fromTo(
+        headerRef.current,
+        { y: -32, opacity: 0, scaleX: 1.08 },
+        { duration: 0.8, ease: "expo.out", y: 0, opacity: 1, scaleX: 1 },
+      );
+    }
+
     const handleScroll = () => {
       const shouldFloat = window.scrollY > 12;
       if (headerRef.current) {
