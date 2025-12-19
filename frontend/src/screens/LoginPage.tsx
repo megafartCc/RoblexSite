@@ -54,7 +54,7 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorDigits, setTwoFactorDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [rememberMe, setRememberMe] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [step, setStep] = useState<"credentials" | "twofactor">("credentials");
@@ -129,6 +129,8 @@ export function LoginPage() {
         return;
       }
 
+      const twoFactorCode = twoFactorDigits.join("");
+
       if (!/^[0-9]{6}$/.test(twoFactorCode)) {
         setMessage("Please enter a valid 6-digit code.");
         return;
@@ -156,7 +158,7 @@ export function LoginPage() {
         setMessage("Logged in successfully with 2FA.");
         setStep("credentials");
         setTempToken(null);
-        setTwoFactorCode("");
+        setTwoFactorDigits(["", "", "", "", "", ""]);
       } catch (error) {
         setMessage("Network error. Please try again.");
       } finally {
@@ -177,7 +179,11 @@ export function LoginPage() {
       >
         <header className="flex h-20 w-full items-center justify-between border-b border-collection-1-stroke bg-collection-1-sub-default px-6">
           <h1 className="text-[28px] font-semibold leading-7 tracking-[-0.84px] text-collection-1-glyphs-title">
-            {mode === "login" ? "Admin login" : "Admin sign up"}
+            {step === "twofactor"
+              ? "2-FA"
+              : mode === "login"
+                ? "Admin login"
+                : "Admin sign up"}
           </h1>
           <button
             type="button"
@@ -256,24 +262,40 @@ export function LoginPage() {
               </div>
             </>
           ) : (
-            <div className="flex w-full flex-col gap-3">
-              <div className="flex h-[52px] items-center justify-center rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
-                <label htmlFor="twofactor" className="sr-only">
-                  2FA code
-                </label>
-                <input
-                  id="twofactor"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
-                  value={twoFactorCode}
-                  onChange={(event) => setTwoFactorCode(event.target.value.replace(/\D/g, ""))}
-                  placeholder="6-digit code"
-                  required
-                  aria-required="true"
-                  className="w-full bg-transparent text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
-                />
+            <div className="flex w-full flex-col gap-4">
+              <p className="text-sm leading-4 text-collection-1-glyphs-body">
+                Open your authenticator app, then enter the 6‑digit code shown on the screen.
+              </p>
+              <div className="flex justify-between gap-2">
+                {twoFactorDigits.map((digit, index) => (
+                  <input
+                    key={index}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(event) => {
+                      const value = event.target.value.replace(/\D/g, "").slice(0, 1);
+                      const next = [...twoFactorDigits];
+                      next[index] = value;
+                      setTwoFactorDigits(next);
+
+                      if (value && index < twoFactorDigits.length - 1) {
+                        const nextInput = document.getElementById(`twofactor-${index + 1}`);
+                        nextInput?.focus();
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Backspace" && !twoFactorDigits[index] && index > 0) {
+                        const prevInput = document.getElementById(`twofactor-${index - 1}`);
+                        prevInput?.focus();
+                      }
+                    }}
+                    id={`twofactor-${index}`}
+                    className="flex h-12 w-10 items-center justify-center rounded-lg border border-collection-1-stroke bg-collection-1-background text-center text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-title"
+                  />
+                ))}
               </div>
 
               <div className="flex w-full flex-col gap-3">
@@ -290,7 +312,7 @@ export function LoginPage() {
                   onClick={() => {
                     setStep("credentials");
                     setTempToken(null);
-                    setTwoFactorCode("");
+                    setTwoFactorDigits(["", "", "", "", "", ""]);
                     setMessage(null);
                   }}
                   className="text-sm font-medium text-collection-1-glyphs-body/80 underline-offset-4 hover:underline"
