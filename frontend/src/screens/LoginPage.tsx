@@ -399,7 +399,7 @@ export function LoginPage() {
 
             <div className="flex flex-col gap-6 bg-collection-1-sub-default p-6">
               <p className="text-base font-medium leading-5 tracking-[-0.48px] text-collection-1-glyphs-body">
-                Откройте приложение аутентификатора, далее введите код, который указан на экране.
+                Open your authenticator app, then enter the code shown on screen.
               </p>
 
               <div
@@ -437,7 +437,7 @@ export function LoginPage() {
                 disabled={submitting}
                 className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-4 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-buttons-glyphs transition-opacity hover:opacity-90 disabled:opacity-70"
               >
-                Продолжить
+                Continue
               </button>
             </div>
           </form>
