@@ -58,19 +58,27 @@ export function LoginPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const apiBase =
+    import.meta.env.VITE_API_BASE_URL && import.meta.env.VITE_API_BASE_URL.length > 0
+      ? import.meta.env.VITE_API_BASE_URL.replace(/\/+$/, "")
+      : "/api";
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage(null);
     setSubmitting(true);
 
     try {
-      const res = await fetch("/api/auth/" + (mode === "login" ? "login" : "register"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const res = await fetch(
+        `${apiBase}/auth/` + (mode === "login" ? "login" : "register"),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
         },
-        body: JSON.stringify({ email, password }),
-      });
+      );
 
       const data = await res.json().catch(() => ({}));
 
