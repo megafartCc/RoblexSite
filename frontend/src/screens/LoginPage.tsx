@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Notification } from "../components/Notification";
 
 type IconProps = {
   className?: string;
@@ -66,6 +67,17 @@ export function LoginPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage(null);
+
+    if (!email.includes("@") || !email.includes(".")) {
+      setMessage("Please enter a valid email address.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setMessage("Password must be at least 8 characters long.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -127,9 +139,10 @@ export function LoginPage() {
 
         <div className="flex w-full flex-col gap-6 bg-collection-1-sub-default p-6">
           {message && (
-            <div className="w-full rounded-md border border-collection-1-stroke bg-collection-1-background px-3 py-2 text-sm text-collection-1-glyphs-body">
-              {message}
-            </div>
+            <Notification
+              title={mode === "login" ? "Authorization error" : "Sign up error"}
+              description={message}
+            />
           )}
           <div className="flex w-full flex-col gap-2">
             <div className="flex h-[52px] items-center justify-center rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
