@@ -270,4 +270,3 @@ export async function confirmTwoFactor(req: Request, res: Response) {
 
   res.json({ message: "2FA has been enabled for this account." });
 }
-
