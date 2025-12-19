@@ -56,10 +56,11 @@ export function LandingPage() {
 
   useEffect(() => {
     if (headerRef.current) {
-      gsap.fromTo(
+      const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
+      tl.fromTo(
         headerRef.current,
-        { y: -32, opacity: 0, scaleX: 1.08 },
-        { duration: 0.8, ease: "expo.out", y: 0, opacity: 1, scaleX: 1 },
+        { y: -64, opacity: 0, scaleX: 1.2, filter: "blur(6px)" },
+        { duration: 0.95, y: 0, opacity: 1, scaleX: 1, filter: "blur(0px)" },
       );
     }
 
