@@ -12,6 +12,11 @@ const loginSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
+const registerSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8).max(128),
+});
+
 type UserRow = RowDataPacket & {
   id: number;
   email: string;
@@ -63,5 +68,25 @@ export async function login(req: Request, res: Response) {
       role: user.role ?? "admin",
     },
   });
+}
+
+export async function register(req: Request, res: Response) {
+  const parsed = registerSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    throw new HttpError("Invalid registration payload", 400);
+  }
+
+  const { email, password } = parsed.data;
+
+  const passwordHash = await bcrypt.hash(password, 12);
+
+  await pool.query(
+    `INSERT INTO users (email, password_hash, role)
+     VALUES (?, ?, 'admin')`,
+    [email, passwordHash],
+  );
+
+  res.status(201).json({ message: "Admin account created. You can now log in." });
 }
 

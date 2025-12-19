@@ -7,8 +7,7 @@
     "dev": "ts-node-dev --respawn --transpile-only --ignore-watch node_modules src/server.ts",
     "build": "tsc --project tsconfig.json",
     "start": "node dist/server.js",
-    "lint": "tsc --noEmit --project tsconfig.json",
-    "create-admin": "ts-node-dev --transpile-only src/scripts/create-admin.ts"
+    "lint": "tsc --noEmit --project tsconfig.json"
   },
   "dependencies": {
     "cors": "^2.8.5",

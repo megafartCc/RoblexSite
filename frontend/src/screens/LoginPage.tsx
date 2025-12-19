@@ -54,9 +54,43 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [message, setMessage] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setMessage(null);
+    setSubmitting(true);
+
+    try {
+      const res = await fetch("/api/auth/" + (mode === "login" ? "login" : "register"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const errorText = (data && (data.message || data.error)) || "Something went wrong.";
+        setMessage(errorText);
+        return;
+      }
+
+      if (mode === "login") {
+        setMessage("Logged in successfully.");
+      } else {
+        setMessage("Admin account created. You can now log in.");
+        setMode("login");
+      }
+    } catch (error) {
+      setMessage("Network error. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -71,7 +105,7 @@ export function LoginPage() {
       >
         <header className="flex h-20 w-full items-center justify-between border-b border-collection-1-stroke bg-collection-1-sub-default px-6">
           <h1 className="text-[28px] font-semibold leading-7 tracking-[-0.84px] text-collection-1-glyphs-title">
-            Admin login
+            {mode === "login" ? "Admin login" : "Admin sign up"}
           </h1>
           <button
             type="button"
@@ -84,6 +118,11 @@ export function LoginPage() {
         </header>
 
         <div className="flex w-full flex-col gap-6 bg-collection-1-sub-default p-6">
+          {message && (
+            <div className="w-full rounded-md border border-collection-1-stroke bg-collection-1-background px-3 py-2 text-sm text-collection-1-glyphs-body">
+              {message}
+            </div>
+          )}
           <div className="flex w-full flex-col gap-2">
             <div className="flex h-[52px] items-center justify-center rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
               <label htmlFor="email" className="sr-only">
@@ -126,12 +165,26 @@ export function LoginPage() {
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-4 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-buttons-glyphs transition-opacity hover:opacity-90"
-          >
-            Continue
-          </button>
+          <div className="flex w-full flex-col gap-3">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-4 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-buttons-glyphs transition-opacity hover:opacity-90 disabled:opacity-60"
+            >
+              {mode === "login" ? "Continue" : "Sign up"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMode((prev) => (prev === "login" ? "signup" : "login"));
+                setMessage(null);
+              }}
+              className="text-sm font-medium text-collection-1-glyphs-body/80 underline-offset-4 hover:underline"
+            >
+              {mode === "login" ? "Sign up (temporary admin)" : "Back to login"}
+            </button>
+          </div>
         </div>
 
         <div className="flex w-full items-center justify-between border-t border-collection-1-stroke bg-collection-1-impr-default px-6 py-4">
