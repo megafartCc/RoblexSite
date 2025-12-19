@@ -47,7 +47,7 @@ export async function login(req: Request, res: Response) {
   const { email, password } = parsed.data;
 
   const [rows] = await pool.query<UserRow[]>(
-    "SELECT id, email, password_hash, role FROM users WHERE email = ? LIMIT 1",
+    "SELECT id, email, password_hash, role, two_factor_secret, two_factor_enabled FROM users WHERE email = ? LIMIT 1",
     [email],
   );
 
@@ -63,7 +63,14 @@ export async function login(req: Request, res: Response) {
     throw new HttpError("Invalid email or password", 401);
   }
 
-  if (user.two_factor_enabled) {
+  if (!user.two_factor_secret) {
+    throw new HttpError(
+      "2FA is required but not configured for this account. Contact an administrator.",
+      403,
+    );
+  }
+
+  if (user.two_factor_enabled || user.two_factor_secret) {
     const tempToken = jwt.sign(
       {
         sub: user.id,
@@ -154,8 +161,8 @@ export async function verifyTwoFactor(req: Request, res: Response) {
 
   const user = rows[0];
 
-  if (!user || !user.two_factor_enabled || !user.two_factor_secret) {
-    throw new HttpError("2FA is not enabled for this account", 400);
+  if (!user || !user.two_factor_secret) {
+    throw new HttpError("2FA is not configured for this account", 400);
   }
 
   const isValid = authenticator.check(token, user.two_factor_secret);
