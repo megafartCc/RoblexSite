@@ -65,7 +65,7 @@ export function LandingPage() {
     const clippedWidth = "1120px";
     const clippedPad = "14px 16px";
 
-    gsap.set(bar, { y: 0, opacity: 1, maxWidth: fullWidth, padding: fullPad });
+    gsap.set(bar, { y: -140, opacity: 0, maxWidth: fullWidth, padding: fullPad });
 
     const playEnter = () => {
       if (activeState.current === true) return;
@@ -73,7 +73,7 @@ export function LandingPage() {
       headerTl.current?.kill();
       bar.classList.add("header-floating");
       const tl = gsap.timeline();
-      tl.to(bar, { duration: 0.35, y: dropY, ease: "power2.out" })
+      tl.to(bar, { duration: 0.35, y: dropY, ease: "power2.out", opacity: 1 })
         .to(bar, { duration: 0.6, maxWidth: clippedWidth, padding: clippedPad, ease: "power2.inOut" }, "+=0.3");
       headerTl.current = tl;
     };
@@ -89,7 +89,7 @@ export function LandingPage() {
       });
       tl.to(bar, { duration: 0.55, maxWidth: fullWidth, padding: fullPad, ease: "power2.inOut" }, 0.1).to(
         bar,
-        { duration: 0.35, y: 0, ease: "power2.out" },
+        { duration: 0.35, y: -140, opacity: 0, ease: "power2.in" },
         "+=0.18",
       );
       headerTl.current = tl;
