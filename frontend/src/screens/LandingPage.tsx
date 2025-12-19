@@ -7,6 +7,8 @@ export function LandingPage() {
   const navRef = useRef<HTMLDivElement | null>(null);
   const pillRef = useRef<HTMLSpanElement | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
+  const activeState = useRef<boolean | null>(null);
+  const headerTl = useRef<gsap.core.Timeline | null>(null);
 
   useEffect(() => {
     const navEl = navRef.current;
@@ -55,26 +57,57 @@ export function LandingPage() {
     const bar = barRef.current;
     if (!bar) return;
 
-    gsap.set(bar, { y: -140, opacity: 0, scaleX: 1.08 });
-    let played = false;
+    const enterThreshold = 60;
+    const exitThreshold = 18;
+    const dropY = 14;
+    const fullWidth = "1280px";
+    const fullPad = "16px 18px";
+    const clippedWidth = "1120px";
+    const clippedPad = "14px 16px";
 
-    const playIn = () => {
-      if (played) return;
-      played = true;
+    gsap.set(bar, { y: 0, opacity: 1, maxWidth: fullWidth, padding: fullPad });
+
+    const playEnter = () => {
+      if (activeState.current === true) return;
+      activeState.current = true;
+      headerTl.current?.kill();
+      bar.classList.add("header-floating");
       const tl = gsap.timeline();
-      tl.to(bar, { duration: 0.65, y: 0, opacity: 1, ease: "power3.out" })
-        .to(bar, { duration: 0.4, scaleX: 0.94, ease: "power2.out" }, "+=0.3")
-        .to(bar, { duration: 0.3, scaleX: 1, ease: "power1.out" });
+      tl.to(bar, { duration: 0.35, y: dropY, ease: "power2.out" })
+        .to(bar, { duration: 0.6, maxWidth: clippedWidth, padding: clippedPad, ease: "power2.inOut" }, "+=0.3");
+      headerTl.current = tl;
+    };
+
+    const playExit = () => {
+      if (activeState.current === false) return;
+      activeState.current = false;
+      headerTl.current?.kill();
+      const tl = gsap.timeline({
+        onComplete: () => {
+          bar.classList.remove("header-floating");
+        },
+      });
+      tl.to(bar, { duration: 0.55, maxWidth: fullWidth, padding: fullPad, ease: "power2.inOut" }, 0.1).to(
+        bar,
+        { duration: 0.35, y: 0, ease: "power2.out" },
+        "+=0.18",
+      );
+      headerTl.current = tl;
     };
 
     const handleScroll = () => {
-      const triggerPoint = (bar.offsetHeight || 80) + 40;
-      if (window.scrollY > triggerPoint) {
-        playIn();
+      const y = window.scrollY;
+      const shouldEnter = y > enterThreshold;
+      const shouldExit = y < exitThreshold;
+      if (shouldEnter) {
+        playEnter();
+      } else if (shouldExit) {
+        playExit();
       }
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
