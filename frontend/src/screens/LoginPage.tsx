@@ -86,6 +86,7 @@ export function LoginPage() {
   const [setupCode, setSetupCode] = useState("");
   const [setupMessage, setSetupMessage] = useState<string | null>(null);
   const [setupSubmitting, setSetupSubmitting] = useState(false);
+  const [hasSetup, setHasSetup] = useState(false);
 
   useEffect(() => {
     if (step === "twofactor" && inputRefs.current[0]) {
@@ -238,6 +239,7 @@ export function LoginPage() {
       setSetupMessage(
         "Scan the QR or enter the secret in your authenticator app, then enter a 6-digit code to confirm.",
       );
+      setHasSetup(true);
     } catch {
       setSetupMessage("Network error. Please try again.");
     } finally {
@@ -279,6 +281,7 @@ export function LoginPage() {
       }
 
       setSetupMessage("2FA has been enabled. You can now log in with your 6-digit code.");
+      setHasSetup(true);
     } catch {
       setSetupMessage("Network error. Please try again.");
     } finally {
@@ -578,10 +581,10 @@ export function LoginPage() {
 
                 <button
                   type="submit"
-                  disabled={setupSubmitting}
+                  disabled={setupSubmitting || hasSetup}
                   className="flex w-full items-center justify-center rounded-lg border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-3 text-base font-semibold text-collection-1-buttons-glyphs transition-opacity hover:opacity-90 disabled:opacity-60"
                 >
-                  Generate 2FA secret
+                  {hasSetup ? "Already set" : "Generate 2FA secret"}
                 </button>
               </form>
 
@@ -589,7 +592,13 @@ export function LoginPage() {
                 <div className="space-y-3 border-t border-collection-1-stroke pt-3">
                   {setupOtpauthUrl && (
                     <div className="flex justify-center">
-                      <QRCodeSVG value={setupOtpauthUrl} size={160} bgColor="#ffffff" fgColor="#000000" />
+                      <QRCodeSVG
+                        value={setupOtpauthUrl}
+                        size={180}
+                        bgColor="#ffffff"
+                        fgColor="#000000"
+                        includeMargin
+                      />
                     </div>
                   )}
                   <div className="text-sm text-collection-1-glyphs-body">
