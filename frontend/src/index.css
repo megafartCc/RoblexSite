@@ -22,6 +22,22 @@
   }
 }
 
+.animate-toast-enter {
+  animation: toast-enter 0.25s ease-out forwards;
+}
+
+@keyframes toast-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) translateX(12px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) translateX(0);
+  }
+}
+
 :root {
   --collection-1-background: rgba(247, 247, 247, 1);
   --collection-1-buttons-glyphs: rgba(230, 230, 230, 1);

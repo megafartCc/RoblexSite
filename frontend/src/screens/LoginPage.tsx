@@ -115,7 +115,7 @@ export function LoginPage() {
 
   return (
     <div
-      className="flex min-h-screen w-full items-center justify-center bg-collection-1-background px-4"
+      className="relative flex min-h-screen w-full items-center justify-center bg-collection-1-background px-4"
       data-collection-1-mode={theme}
     >
       <form
@@ -138,12 +138,6 @@ export function LoginPage() {
         </header>
 
         <div className="flex w-full flex-col gap-6 bg-collection-1-sub-default p-6">
-          {message && (
-            <Notification
-              title={mode === "login" ? "Authorization error" : "Sign up error"}
-              description={message}
-            />
-          )}
           <div className="flex w-full flex-col gap-2">
             <div className="flex h-[52px] items-center justify-center rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
               <label htmlFor="email" className="sr-only">
@@ -229,6 +223,15 @@ export function LoginPage() {
           <ChevronRightIcon className="h-5 w-5 text-collection-1-glyphs-body" />
         </div>
       </form>
+
+      {message && (
+        <div className="pointer-events-none fixed bottom-4 right-4 z-50 w-[377px] max-w-full animate-toast-enter">
+          <Notification
+            title={mode === "login" ? "Authorization error" : "Sign up error"}
+            description={message}
+          />
+        </div>
+      )}
     </div>
   );
 }
