@@ -589,7 +589,7 @@ export function LoginPage() {
                 <div className="space-y-3 border-t border-collection-1-stroke pt-3">
                   {setupOtpauthUrl && (
                     <div className="flex justify-center">
-                      <QRCodeSVG value={setupOtpauthUrl} size={160} />
+                      <QRCodeSVG value={setupOtpauthUrl} size={160} bgColor="#ffffff" fgColor="#000000" />
                     </div>
                   )}
                   <div className="text-sm text-collection-1-glyphs-body">
