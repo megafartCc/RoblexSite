@@ -55,7 +55,7 @@ export function LandingPage() {
     const bar = barRef.current;
     if (!bar) return;
 
-    gsap.set(bar, { y: -120, opacity: 0, scaleX: 1.08 });
+    gsap.set(bar, { y: -140, opacity: 0, scaleX: 1.08 });
     let played = false;
 
     const playIn = () => {
@@ -68,7 +68,8 @@ export function LandingPage() {
     };
 
     const handleScroll = () => {
-      if (window.scrollY > 60) {
+      const triggerPoint = (bar.offsetHeight || 80) + 40;
+      if (window.scrollY > triggerPoint) {
         playIn();
       }
     };
