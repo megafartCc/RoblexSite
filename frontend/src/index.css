@@ -122,13 +122,19 @@
   left: 0;
   width: 0;
   height: 0;
-  border-radius: 12px;
-  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.12);
   opacity: 0;
   transition:
-    transform 260ms ease,
-    width 260ms ease,
-    height 260ms ease,
-    opacity 200ms ease;
+    transform 240ms ease,
+    width 240ms ease,
+    height 240ms ease,
+    opacity 180ms ease;
   pointer-events: none;
+}
+
+.scroll-fill {
+  height: 200vh;
+  width: 100%;
+  background: #000;
 }

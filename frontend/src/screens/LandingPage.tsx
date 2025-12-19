@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from "react";
+import gsap from "gsap";
 
 const navItems = ["Home", "About", "Help", "Executor", "Download", "Credits", "Donate"];
 
 export function LandingPage() {
   const navRef = useRef<HTMLDivElement | null>(null);
   const pillRef = useRef<HTMLSpanElement | null>(null);
+  const barRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const navEl = navRef.current;
@@ -49,10 +51,36 @@ export function LandingPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+
+    gsap.set(bar, { y: -120, opacity: 0, scaleX: 1.08 });
+    let played = false;
+
+    const playIn = () => {
+      if (played) return;
+      played = true;
+      const tl = gsap.timeline();
+      tl.to(bar, { duration: 0.65, y: 0, opacity: 1, ease: "power3.out" })
+        .to(bar, { duration: 0.4, scaleX: 0.94, ease: "power2.out" }, "+=0.3")
+        .to(bar, { duration: 0.3, scaleX: 1, ease: "power1.out" });
+    };
+
+    const handleScroll = () => {
+      if (window.scrollY > 60) {
+        playIn();
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <div className="landing-shell">
       <header className="topbar">
-        <div className="topbar-inner">
+        <div className="topbar-inner" ref={barRef}>
           <a className="brand" href="#">
             <span className="brand-mark" aria-hidden="true">
               <svg width="28" height="28" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -89,6 +117,7 @@ export function LandingPage() {
           </a>
         </div>
       </header>
+      <div className="scroll-fill" />
     </div>
   );
 }
