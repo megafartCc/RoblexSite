@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Notification } from "../components/Notification";
 
 type IconProps = {
@@ -77,6 +77,13 @@ export function LoginPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  useEffect(() => {
+    if (step === "twofactor" && inputRefs.current[0]) {
+      inputRefs.current[0].focus();
+      inputRefs.current[0].select();
+    }
+  }, [step]);
 
   const apiBase =
     import.meta.env.VITE_API_BASE_URL && import.meta.env.VITE_API_BASE_URL.length > 0
@@ -196,23 +203,39 @@ export function LoginPage() {
       return;
     }
 
-    let nextFocus = index;
+    const digit = digits.slice(-1);
+
     setCode((prev) => {
       const next = [...prev];
-      digits
-        .slice(0, CODE_LENGTH - index)
-        .split("")
-        .forEach((digit, offset) => {
-          next[index + offset] = digit;
-          nextFocus = index + offset + 1;
-        });
+      next[index] = digit;
       return next;
     });
 
-    if (nextFocus < CODE_LENGTH) {
-      inputRefs.current[nextFocus]?.focus();
-      inputRefs.current[nextFocus]?.select();
+    if (index < CODE_LENGTH - 1) {
+      inputRefs.current[index + 1]?.focus();
+      inputRefs.current[index + 1]?.select();
     }
+  };
+
+  const handleCodePaste = (event: React.ClipboardEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, CODE_LENGTH);
+
+    if (!pasted) return;
+
+    const digits = pasted.split("");
+
+    setCode((prev) => {
+      const next = [...prev];
+      digits.forEach((digit, idx) => {
+        next[idx] = digit;
+      });
+      return next;
+    });
+
+    const focusIndex = Math.min(digits.length, CODE_LENGTH - 1);
+    inputRefs.current[focusIndex]?.focus();
+    inputRefs.current[focusIndex]?.select();
   };
 
   const handleCodeKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, index: number) => {
@@ -363,7 +386,7 @@ export function LoginPage() {
             <header className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <h1 className="text-[28px] font-semibold leading-7 tracking-[-0.84px] text-collection-1-glyphs-title">
-                  2FA
+                  2-FA
                 </h1>
               </div>
               <button
@@ -382,7 +405,7 @@ export function LoginPage() {
 
             <div className="flex flex-col gap-6">
               <p className="text-base leading-6 text-collection-1-glyphs-body">
-                Open your authenticator app, then enter the code displayed on your screen.
+                Откройте приложение аутентификатора, далее введите код, который указан на экране.
               </p>
 
               <div className="grid grid-cols-6 gap-3">
@@ -395,13 +418,14 @@ export function LoginPage() {
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    maxLength={CODE_LENGTH}
+                    maxLength={1}
                     value={value}
                     onChange={(event) => handleCodeChange(event.target.value, index)}
                     onKeyDown={(event) => handleCodeKeyDown(event, index)}
                     onFocus={(event) => event.target.select()}
+                    onPaste={handleCodePaste}
                     aria-label={`Digit ${index + 1}`}
-                    className="h-14 w-full rounded-xl border border-collection-1-stroke bg-collection-1-background text-center text-2xl font-semibold tracking-[0.2em] text-collection-1-glyphs-title transition focus:border-collection-1-buttons-primary-default focus:ring-2 focus:ring-collection-1-buttons-primary-default/60"
+                    className="h-[52px] w-full rounded-xl border border-collection-1-stroke bg-collection-1-background text-center text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-title transition focus:border-collection-1-buttons-primary-default focus:ring-2 focus:ring-collection-1-buttons-primary-default/60"
                   />
                 ))}
               </div>
@@ -412,7 +436,7 @@ export function LoginPage() {
               disabled={submitting}
               className="mt-2 w-full rounded-2xl border border-collection-1-buttons-stroke bg-white px-4 py-3 text-lg font-semibold text-slate-900 shadow-[0_10px_40px_rgba(0,0,0,0.35)] transition hover:translate-y-[1px] hover:shadow-[0_8px_28px_rgba(0,0,0,0.3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-70"
             >
-              Continue
+              Продолжить
             </button>
           </form>
         </div>
