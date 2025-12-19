@@ -49,6 +49,11 @@ export function LandingPage() {
     navEl.addEventListener("mouseleave", handleLeave);
     listeners.push(() => navEl.removeEventListener("mouseleave", handleLeave));
 
+    const active = links.find((link) => link.classList.contains("active"));
+    if (active) {
+      requestAnimationFrame(() => moveHighlight(active));
+    }
+
     return () => {
       listeners.forEach((fn) => fn());
     };
@@ -59,8 +64,8 @@ export function LandingPage() {
       const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
       tl.fromTo(
         headerRef.current,
-        { y: -64, opacity: 0, scaleX: 1.2, filter: "blur(6px)" },
-        { duration: 0.95, y: 0, opacity: 1, scaleX: 1, filter: "blur(0px)" },
+        { y: -64, opacity: 0, scaleX: 1.18, maxWidth: "1220px", paddingInline: "24px" },
+        { duration: 0.9, y: 0, opacity: 1, scaleX: 1, maxWidth: "1080px", paddingInline: "12px" },
       );
     }
 
