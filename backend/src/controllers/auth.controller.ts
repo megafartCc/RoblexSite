@@ -28,6 +28,11 @@ const twoFaSetupSchema = z.object({
   password: z.string().min(8).max(128),
 });
 
+const twoFaConfirmSchema = z.object({
+  email: z.string().email(),
+  token: z.string().length(6),
+});
+
 type UserRow = RowDataPacket & {
   id: number;
   email: string;
@@ -65,12 +70,16 @@ export async function login(req: Request, res: Response) {
 
   if (!user.two_factor_secret) {
     throw new HttpError(
-      "2FA is required but not configured for this account. Contact an administrator.",
+      "2FA is required but not configured for this account. Please set it up first.",
       403,
     );
   }
 
-  if (user.two_factor_enabled || user.two_factor_secret) {
+  if (!user.two_factor_enabled) {
+    throw new HttpError("Please finish 2FA setup for this account before logging in.", 403);
+  }
+
+  if (user.two_factor_enabled) {
     const tempToken = jwt.sign(
       {
         sub: user.id,
@@ -161,7 +170,7 @@ export async function verifyTwoFactor(req: Request, res: Response) {
 
   const user = rows[0];
 
-  if (!user || !user.two_factor_secret) {
+  if (!user || !user.two_factor_secret || !user.two_factor_enabled) {
     throw new HttpError("2FA is not configured for this account", 400);
   }
 
@@ -220,14 +229,45 @@ export async function setupTwoFactor(req: Request, res: Response) {
   const secret = authenticator.generateSecret();
   const otpauthUrl = authenticator.keyuri(email, "RoblexSite", secret);
 
-  await pool.query(
-    "UPDATE users SET two_factor_secret = ?, two_factor_enabled = 1 WHERE id = ?",
-    [secret, user.id],
-  );
+  await pool.query("UPDATE users SET two_factor_secret = ?, two_factor_enabled = 0 WHERE id = ?", [
+    secret,
+    user.id,
+  ]);
 
   res.json({
     otpauthUrl,
     secret,
   });
+}
+
+export async function confirmTwoFactor(req: Request, res: Response) {
+  const parsed = twoFaConfirmSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    throw new HttpError("Invalid 2FA confirmation payload", 400);
+  }
+
+  const { email, token } = parsed.data;
+
+  const [rows] = await pool.query<UserRow[]>(
+    "SELECT id, email, two_factor_secret FROM users WHERE email = ? LIMIT 1",
+    [email],
+  );
+
+  const user = rows[0];
+
+  if (!user || !user.two_factor_secret) {
+    throw new HttpError("2FA is not configured for this account", 400);
+  }
+
+  const isValid = authenticator.check(token, user.two_factor_secret);
+
+  if (!isValid) {
+    throw new HttpError("Invalid 2FA code", 401);
+  }
+
+  await pool.query("UPDATE users SET two_factor_enabled = 1 WHERE id = ?", [user.id]);
+
+  res.json({ message: "2FA has been enabled for this account." });
 }
 

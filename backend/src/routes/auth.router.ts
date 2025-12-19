@@ -4,6 +4,7 @@ import {
   register,
   setupTwoFactor,
   verifyTwoFactor,
+  confirmTwoFactor,
 } from "../controllers/auth.controller.js";
 
 export const authRouter = Router();
@@ -35,6 +36,14 @@ authRouter.post("/2fa/setup", async (req, res, next) => {
 authRouter.post("/2fa/verify", async (req, res, next) => {
   try {
     await verifyTwoFactor(req, res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.post("/2fa/confirm", async (req, res, next) => {
+  try {
+    await confirmTwoFactor(req, res);
   } catch (error) {
     next(error);
   }
