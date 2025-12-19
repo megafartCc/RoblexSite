@@ -4,7 +4,8 @@
 
 @layer base {
   body {
-    @apply m-0 min-h-screen bg-slate-950 text-slate-100 antialiased;
+    @apply m-0 min-h-screen bg-black text-white antialiased;
+    font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
   button,
@@ -21,6 +22,7 @@
   }
 }
 
+/* Toast animation (kept for admin) */
 .animate-toast-enter {
   animation: toast-enter 0.25s ease-out forwards;
 }
@@ -37,38 +39,76 @@
   }
 }
 
-:root {
-  --collection-1-background: rgba(247, 247, 247, 1);
-  --collection-1-buttons-glyphs: rgba(230, 230, 230, 1);
-  --collection-1-buttons-primary-default: rgba(21, 21, 21, 1);
-  --collection-1-buttons-stroke: rgba(46, 46, 46, 1);
-  --collection-1-glyphs-body: rgba(123, 127, 134, 1);
-  --collection-1-glyphs-title: rgba(21, 21, 21, 1);
-  --collection-1-impr-default: rgba(250, 250, 250, 1);
-  --collection-1-stroke: rgba(241, 241, 241, 1);
-  --collection-1-sub-default: rgba(255, 255, 255, 1);
+/* Brand/navigation for landing */
+.landing-shell {
+  min-height: 100vh;
+  background: #000;
+  color: #fff;
 }
 
-[data-collection-1-mode="light"] {
-  --collection-1-background: rgba(247, 247, 247, 1);
-  --collection-1-buttons-glyphs: rgba(230, 230, 230, 1);
-  --collection-1-buttons-primary-default: rgba(21, 21, 21, 1);
-  --collection-1-buttons-stroke: rgba(46, 46, 46, 1);
-  --collection-1-glyphs-body: rgba(123, 127, 134, 1);
-  --collection-1-glyphs-title: rgba(21, 21, 21, 1);
-  --collection-1-impr-default: rgba(250, 250, 250, 1);
-  --collection-1-stroke: rgba(241, 241, 241, 1);
-  --collection-1-sub-default: rgba(255, 255, 255, 1);
+.topbar {
+  width: 100%;
+  padding: 20px 32px;
+  display: flex;
+  justify-content: center;
 }
 
-[data-collection-1-mode="dark"] {
-  --collection-1-background: rgba(28, 32, 38, 1);
-  --collection-1-buttons-glyphs: rgba(21, 21, 21, 1);
-  --collection-1-buttons-primary-default: rgba(247, 247, 247, 1);
-  --collection-1-buttons-stroke: rgba(241, 241, 241, 1);
-  --collection-1-glyphs-body: rgba(141, 151, 166, 1);
-  --collection-1-glyphs-title: rgba(230, 230, 230, 1);
-  --collection-1-impr-default: rgba(29, 33, 39, 1);
-  --collection-1-stroke: rgba(38, 43, 52, 1);
-  --collection-1-sub-default: rgba(32, 36, 42, 1);
+.topbar-inner {
+  width: 100%;
+  max-width: 1280px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.brand-mark {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex: 1;
+  justify-content: center;
+}
+
+.nav-link {
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: #ffffff;
+}
+
+.cta-discord {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.02rem;
+}
+
+.discord-icon {
+  display: inline-flex;
 }
