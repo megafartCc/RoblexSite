@@ -47,16 +47,10 @@
 }
 
 .topbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
   width: 100%;
   padding: 20px 32px;
   display: flex;
   justify-content: center;
-  pointer-events: none;
 }
 
 .topbar-inner {
@@ -65,7 +59,6 @@
   display: flex;
   align-items: center;
   gap: 28px;
-  pointer-events: auto;
   padding: 16px 18px;
   border-radius: 999px;
   background: #0c0c0c;
@@ -81,6 +74,11 @@
 .topbar-inner.header-floating {
   background: #0c0c0c;
   border: 1px solid transparent;
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
 }
 
 .brand {

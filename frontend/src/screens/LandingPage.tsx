@@ -7,8 +7,10 @@ export function LandingPage() {
   const navRef = useRef<HTMLDivElement | null>(null);
   const pillRef = useRef<HTMLSpanElement | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
+  const spacerRef = useRef<HTMLDivElement | null>(null);
   const activeState = useRef<boolean | null>(null);
   const headerTl = useRef<gsap.core.Timeline | null>(null);
+  const positions = useRef({ top: 0, height: 0 });
 
   useEffect(() => {
     const navEl = navRef.current;
@@ -57,15 +59,23 @@ export function LandingPage() {
     const bar = barRef.current;
     if (!bar) return;
 
-    const enterThreshold = 60;
-    const exitThreshold = 18;
+    const updateMetrics = () => {
+      const rect = bar.getBoundingClientRect();
+      const top = window.scrollY + rect.top;
+      positions.current = { top, height: rect.height };
+      if (spacerRef.current) spacerRef.current.style.height = `${rect.height + 20}px`;
+    };
+
+    updateMetrics();
+    window.addEventListener("resize", updateMetrics);
+
     const dropY = 14;
     const fullWidth = "1280px";
     const fullPad = "16px 18px";
     const clippedWidth = "1120px";
     const clippedPad = "14px 16px";
 
-    gsap.set(bar, { y: -140, opacity: 0, maxWidth: fullWidth, padding: fullPad });
+    gsap.set(bar, { y: 0, opacity: 1, maxWidth: fullWidth, padding: fullPad, position: "static", transform: "none" });
 
     const playEnter = () => {
       if (activeState.current === true) return;
@@ -89,7 +99,7 @@ export function LandingPage() {
       });
       tl.to(bar, { duration: 0.55, maxWidth: fullWidth, padding: fullPad, ease: "power2.inOut" }, 0.1).to(
         bar,
-        { duration: 0.35, y: -140, opacity: 0, ease: "power2.in" },
+        { duration: 0.35, y: 0, opacity: 1, ease: "power2.out" },
         "+=0.18",
       );
       headerTl.current = tl;
@@ -97,8 +107,10 @@ export function LandingPage() {
 
     const handleScroll = () => {
       const y = window.scrollY;
-      const shouldEnter = y > enterThreshold;
-      const shouldExit = y < exitThreshold;
+      const start = positions.current.top;
+      const height = positions.current.height;
+      const shouldEnter = y > start + height;
+      const shouldExit = y < start + 10;
       if (shouldEnter) {
         playEnter();
       } else if (shouldExit) {
@@ -108,7 +120,10 @@ export function LandingPage() {
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", updateMetrics);
+    };
   }, []);
 
   return (
@@ -151,7 +166,7 @@ export function LandingPage() {
           </a>
         </div>
       </header>
-      <div className="topbar-spacer" />
+      <div className="topbar-spacer" ref={spacerRef} />
       <div className="scroll-fill" />
     </div>
   );
