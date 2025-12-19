@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Notification } from "../components/Notification";
 
 type IconProps = {
@@ -35,6 +35,20 @@ const EyeIcon: React.FC<IconProps> = ({ className }) => (
   </svg>
 );
 
+const MoonIcon: React.FC<IconProps> = ({ className }) => (
+  <svg
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      fill="currentColor"
+      d="M20.742 15.316a.75.75 0 0 0-.776-.187 6.75 6.75 0 0 1-8.455-8.455.75.75 0 0 0-.963-.963 8.25 8.25 0 1 0 10.38 10.38.75.75 0 0 0-.186-.775Z"
+    />
+  </svg>
+);
+
 const ChevronRightIcon: React.FC<IconProps> = ({ className }) => (
   <svg
     viewBox="0 0 24 24"
@@ -50,17 +64,19 @@ const ChevronRightIcon: React.FC<IconProps> = ({ className }) => (
 );
 
 export function LoginPage() {
+  const CODE_LENGTH = 6;
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [twoFactorDigits, setTwoFactorDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(""));
   const [rememberMe, setRememberMe] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [step, setStep] = useState<"credentials" | "twofactor">("credentials");
   const [tempToken, setTempToken] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   const apiBase =
     import.meta.env.VITE_API_BASE_URL && import.meta.env.VITE_API_BASE_URL.length > 0
@@ -108,6 +124,7 @@ export function LoginPage() {
           setTempToken(data.tempToken);
           setStep("twofactor");
           setMessage("Enter the 6-digit code from your authenticator app.");
+          setCode(Array(CODE_LENGTH).fill(""));
           return;
         }
 
@@ -129,7 +146,7 @@ export function LoginPage() {
         return;
       }
 
-      const twoFactorCode = twoFactorDigits.join("");
+      const twoFactorCode = code.join("");
 
       if (!/^[0-9]{6}$/.test(twoFactorCode)) {
         setMessage("Please enter a valid 6-digit code.");
@@ -158,7 +175,7 @@ export function LoginPage() {
         setMessage("Logged in successfully with 2FA.");
         setStep("credentials");
         setTempToken(null);
-        setTwoFactorDigits(["", "", "", "", "", ""]);
+        setCode(Array(CODE_LENGTH).fill(""));
       } catch (error) {
         setMessage("Network error. Please try again.");
       } finally {
@@ -167,189 +184,244 @@ export function LoginPage() {
     }
   };
 
+  const handleCodeChange = (value: string, index: number) => {
+    const digits = value.replace(/\D/g, "");
+
+    if (!digits) {
+      setCode((prev) => {
+        const next = [...prev];
+        next[index] = "";
+        return next;
+      });
+      return;
+    }
+
+    let nextFocus = index;
+    setCode((prev) => {
+      const next = [...prev];
+      digits
+        .slice(0, CODE_LENGTH - index)
+        .split("")
+        .forEach((digit, offset) => {
+          next[index + offset] = digit;
+          nextFocus = index + offset + 1;
+        });
+      return next;
+    });
+
+    if (nextFocus < CODE_LENGTH) {
+      inputRefs.current[nextFocus]?.focus();
+      inputRefs.current[nextFocus]?.select();
+    }
+  };
+
+  const handleCodeKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, index: number) => {
+    if (event.key === "Backspace" && !code[index] && index > 0) {
+      const prevIndex = index - 1;
+      setCode((prev) => {
+        const next = [...prev];
+        next[prevIndex] = "";
+        return next;
+      });
+      inputRefs.current[prevIndex]?.focus();
+      inputRefs.current[prevIndex]?.select();
+    }
+
+    if (event.key === "ArrowLeft" && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+      inputRefs.current[index - 1]?.select();
+    }
+
+    if (event.key === "ArrowRight" && index < CODE_LENGTH - 1) {
+      inputRefs.current[index + 1]?.focus();
+      inputRefs.current[index + 1]?.select();
+    }
+  };
+
   return (
     <div
       className="relative flex min-h-screen w-full items-center justify-center bg-collection-1-background px-4"
       data-collection-1-mode={theme}
     >
-      <form
-        className="flex w-full max-w-md flex-col items-start overflow-hidden rounded-xl border-2 border-collection-1-stroke bg-collection-1-sub-default shadow-[0_4px_16px_rgba(17,17,17,0.04)]"
-        aria-label="Admin login form"
-        onSubmit={handleSubmit}
-      >
-        <header className="flex h-20 w-full items-center justify-between border-b border-collection-1-stroke bg-collection-1-sub-default px-6">
-          <h1 className="text-[28px] font-semibold leading-7 tracking-[-0.84px] text-collection-1-glyphs-title">
-            {step === "twofactor"
-              ? "2-FA"
-              : mode === "login"
-                ? "Admin login"
-                : "Admin sign up"}
-          </h1>
-          <button
-            type="button"
-            className="flex h-8 w-8 items-center justify-center rounded-md bg-collection-1-sub-default transition-opacity hover:opacity-80"
-            aria-label="Toggle theme"
-            onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
-          >
-            <SunIcon className="h-6 w-6 text-collection-1-glyphs-title" />
-          </button>
-        </header>
+      {step === "credentials" ? (
+        <form
+          className="flex w-full max-w-md flex-col items-start overflow-hidden rounded-xl border-2 border-collection-1-stroke bg-collection-1-sub-default shadow-[0_4px_16px_rgba(17,17,17,0.04)]"
+          aria-label="Admin login form"
+          onSubmit={handleSubmit}
+        >
+          <header className="flex h-20 w-full items-center justify-between border-b border-collection-1-stroke bg-collection-1-sub-default px-6">
+            <h1 className="text-[28px] font-semibold leading-7 tracking-[-0.84px] text-collection-1-glyphs-title">
+              {mode === "login" ? "Admin login" : "Admin sign up"}
+            </h1>
+            <button
+              type="button"
+              className="flex h-8 w-8 items-center justify-center rounded-md bg-collection-1-sub-default transition-opacity hover:opacity-80"
+              aria-label="Toggle theme"
+              onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+            >
+              <SunIcon className="h-6 w-6 text-collection-1-glyphs-title" />
+            </button>
+          </header>
 
-        <div className="flex w-full flex-col gap-6 bg-collection-1-sub-default p-6">
-          {step === "credentials" ? (
-            <>
-              <div className="flex w-full flex-col gap-2">
-                <div className="flex h-[52px] items-center justify-center rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
-                  <label htmlFor="email" className="sr-only">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="Email"
-                    required
-                    aria-required="true"
-                    className="w-full bg-transparent text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
-                  />
-                </div>
-
-                <div className="flex h-[52px] w-full items-center justify-between rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
-                  <label htmlFor="password" className="sr-only">
-                    Password
-                  </label>
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    placeholder="Password"
-                    required
-                    aria-required="true"
-                    className="mr-3 w-full bg-transparent text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
-                  />
-                  <button
-                    type="button"
-                    className="text-collection-1-glyphs-body transition-opacity hover:opacity-80"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    onClick={() => setShowPassword((prev) => !prev)}
-                  >
-                    <EyeIcon className="h-5 w-5" />
-                  </button>
-                </div>
+          <div className="flex w-full flex-col gap-6 bg-collection-1-sub-default p-6">
+            <div className="flex w-full flex-col gap-2">
+              <div className="flex h-[52px] items-center justify-center rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
+                <label htmlFor="email" className="sr-only">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="Email"
+                  required
+                  aria-required="true"
+                  className="w-full bg-transparent text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
+                />
               </div>
 
-              <div className="flex w-full flex-col gap-3">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-4 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-buttons-glyphs transition-opacity hover:opacity-90 disabled:opacity-60"
-                >
-                  {mode === "login" ? "Continue" : "Sign up"}
-                </button>
-
+              <div className="flex h-[52px] w-full items-center justify-between rounded-xl border border-collection-1-stroke bg-collection-1-background px-4 py-2.5">
+                <label htmlFor="password" className="sr-only">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Password"
+                  required
+                  aria-required="true"
+                  className="mr-3 w-full bg-transparent text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body placeholder:text-collection-1-glyphs-body/70"
+                />
                 <button
                   type="button"
-                  onClick={() => {
-                    setMode((prev) => (prev === "login" ? "signup" : "login"));
-                    setMessage(null);
-                  }}
-                  className="text-sm font-medium text-collection-1-glyphs-body/80 underline-offset-4 hover:underline"
+                  className="text-collection-1-glyphs-body transition-opacity hover:opacity-80"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((prev) => !prev)}
                 >
-                  {mode === "login" ? "Sign up (temporary admin)" : "Back to login"}
-                </button>
-              </div>
-            </>
-          ) : (
-            <div className="flex w-full flex-col gap-4">
-              <p className="text-sm leading-4 text-collection-1-glyphs-body">
-                Open your authenticator app, then enter the 6‑digit code shown on the screen.
-              </p>
-              <div className="flex justify-between gap-2">
-                {twoFactorDigits.map((digit, index) => (
-                  <input
-                    key={index}
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(event) => {
-                      const value = event.target.value.replace(/\D/g, "").slice(0, 1);
-                      const next = [...twoFactorDigits];
-                      next[index] = value;
-                      setTwoFactorDigits(next);
-
-                      if (value && index < twoFactorDigits.length - 1) {
-                        const nextInput = document.getElementById(`twofactor-${index + 1}`);
-                        nextInput?.focus();
-                      }
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === "Backspace" && !twoFactorDigits[index] && index > 0) {
-                        const prevInput = document.getElementById(`twofactor-${index - 1}`);
-                        prevInput?.focus();
-                      }
-                    }}
-                    id={`twofactor-${index}`}
-                    className="flex h-12 w-10 items-center justify-center rounded-lg border border-collection-1-stroke bg-collection-1-background text-center text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-title"
-                  />
-                ))}
-              </div>
-
-              <div className="flex w-full flex-col gap-3">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-4 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-buttons-glyphs transition-opacity hover:opacity-90 disabled:opacity-60"
-                >
-                  Verify code
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep("credentials");
-                    setTempToken(null);
-                    setTwoFactorDigits(["", "", "", "", "", ""]);
-                    setMessage(null);
-                  }}
-                  className="text-sm font-medium text-collection-1-glyphs-body/80 underline-offset-4 hover:underline"
-                >
-                  Back to login
+                  <EyeIcon className="h-5 w-5" />
                 </button>
               </div>
             </div>
-          )}
-        </div>
 
-        <div className="flex w-full items-center justify-between border-t border-collection-1-stroke bg-collection-1-impr-default px-6 py-4">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body transition-opacity hover:opacity-80"
-            aria-label="Remember this device"
-            aria-pressed={rememberMe}
-            onClick={() => setRememberMe((prev) => !prev)}
+            <div className="flex w-full flex-col gap-3">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-collection-1-buttons-stroke bg-collection-1-buttons-primary-default px-4 py-4 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-buttons-glyphs transition-opacity hover:opacity-90 disabled:opacity-60"
+              >
+                {mode === "login" ? "Continue" : "Sign up"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setMode((prev) => (prev === "login" ? "signup" : "login"));
+                  setMessage(null);
+                }}
+                className="text-sm font-medium text-collection-1-glyphs-body/80 underline-offset-4 hover:underline"
+              >
+                {mode === "login" ? "Sign up (temporary admin)" : "Back to login"}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex w-full items-center justify-between border-t border-collection-1-stroke bg-collection-1-impr-default px-6 py-4">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 text-xl font-medium leading-5 tracking-[-0.6px] text-collection-1-glyphs-body transition-opacity hover:opacity-80"
+              aria-label="Remember this device"
+              aria-pressed={rememberMe}
+              onClick={() => setRememberMe((prev) => !prev)}
+            >
+              <div
+                className={`h-6 w-6 rounded-md border border-collection-1-stroke bg-gradient-to-br from-slate-100/10 via-slate-100/40 to-slate-100/10 ${
+                  rememberMe ? "bg-collection-1-buttons-primary-default" : ""
+                }`}
+                role="checkbox"
+                aria-checked={rememberMe}
+              />
+              <span>Remember me</span>
+            </button>
+
+            <ChevronRightIcon className="h-5 w-5 text-collection-1-glyphs-body" />
+          </div>
+        </form>
+      ) : (
+        <div className="relative w-full max-w-xl">
+          <div
+            className="pointer-events-none absolute inset-x-6 -top-8 h-20 rounded-full bg-gradient-to-r from-fuchsia-600 via-rose-500 to-amber-400 opacity-40 blur-3xl"
+            aria-hidden="true"
+          />
+          <form
+            className="relative z-10 flex w-full flex-col gap-6 overflow-hidden rounded-2xl border-2 border-collection-1-stroke bg-collection-1-sub-default/90 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.3)] backdrop-blur"
+            aria-label="2FA verification form"
+            onSubmit={handleSubmit}
           >
-            <div
-              className={`h-6 w-6 rounded-md border border-collection-1-stroke bg-gradient-to-br from-slate-100/10 via-slate-100/40 to-slate-100/10 ${
-                rememberMe ? "bg-collection-1-buttons-primary-default" : ""
-              }`}
-              role="checkbox"
-              aria-checked={rememberMe}
-            />
-            <span>Remember me</span>
-          </button>
+            <header className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h1 className="text-[28px] font-semibold leading-7 tracking-[-0.84px] text-collection-1-glyphs-title">
+                  2FA
+                </h1>
+              </div>
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-collection-1-stroke bg-collection-1-background text-collection-1-glyphs-title transition hover:opacity-90"
+                aria-label="Toggle theme"
+                onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+              >
+                {theme === "dark" ? (
+                  <MoonIcon className="h-6 w-6" />
+                ) : (
+                  <SunIcon className="h-6 w-6" />
+                )}
+              </button>
+            </header>
 
-          <ChevronRightIcon className="h-5 w-5 text-collection-1-glyphs-body" />
+            <div className="flex flex-col gap-6">
+              <p className="text-base leading-6 text-collection-1-glyphs-body">
+                Open your authenticator app, then enter the code displayed on your screen.
+              </p>
+
+              <div className="grid grid-cols-6 gap-3">
+                {code.map((value, index) => (
+                  <input
+                    key={index}
+                    ref={(node) => {
+                      inputRefs.current[index] = node;
+                    }}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={CODE_LENGTH}
+                    value={value}
+                    onChange={(event) => handleCodeChange(event.target.value, index)}
+                    onKeyDown={(event) => handleCodeKeyDown(event, index)}
+                    onFocus={(event) => event.target.select()}
+                    aria-label={`Digit ${index + 1}`}
+                    className="h-14 w-full rounded-xl border border-collection-1-stroke bg-collection-1-background text-center text-2xl font-semibold tracking-[0.2em] text-collection-1-glyphs-title transition focus:border-collection-1-buttons-primary-default focus:ring-2 focus:ring-collection-1-buttons-primary-default/60"
+                  />
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="mt-2 w-full rounded-2xl border border-collection-1-buttons-stroke bg-white px-4 py-3 text-lg font-semibold text-slate-900 shadow-[0_10px_40px_rgba(0,0,0,0.35)] transition hover:translate-y-[1px] hover:shadow-[0_8px_28px_rgba(0,0,0,0.3)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-70"
+            >
+              Continue
+            </button>
+          </form>
         </div>
-      </form>
+      )}
 
       {message && (
         <div className="pointer-events-none fixed bottom-4 right-4 z-50 w-[377px] max-w-full animate-toast-enter">
           <Notification
-            title={mode === "login" ? "Authorization error" : "Sign up error"}
+            title={mode === "login" ? "Authorization message" : "Sign up message"}
             description={message}
           />
         </div>
@@ -357,4 +429,3 @@ export function LoginPage() {
     </div>
   );
 }
-
