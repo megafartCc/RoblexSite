@@ -117,6 +117,7 @@ export function LandingPage() {
           </a>
         </div>
       </header>
+      <div className="topbar-spacer" />
       <div className="scroll-fill" />
     </div>
   );
