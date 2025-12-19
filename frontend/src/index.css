@@ -83,6 +83,7 @@
   gap: 22px;
   flex: 1;
   justify-content: center;
+  position: relative;
 }
 
 .nav-link {
@@ -99,7 +100,6 @@
 .nav-link:hover,
 .nav-link.active {
   color: #ffffff;
-  background-color: rgba(255, 255, 255, 0.08);
 }
 
 .cta-discord {
@@ -114,4 +114,21 @@
 
 .discord-icon {
   display: inline-flex;
+}
+
+.nav-hover-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.1);
+  opacity: 0;
+  transition:
+    transform 260ms ease,
+    width 260ms ease,
+    height 260ms ease,
+    opacity 200ms ease;
+  pointer-events: none;
 }

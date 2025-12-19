@@ -1,8 +1,54 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 const navItems = ["Home", "About", "Help", "Executor", "Download", "Credits", "Donate"];
 
 export function LandingPage() {
+  const navRef = useRef<HTMLDivElement | null>(null);
+  const pillRef = useRef<HTMLSpanElement | null>(null);
+
+  useEffect(() => {
+    const navEl = navRef.current;
+    const pillEl = pillRef.current;
+    if (!navEl || !pillEl) return;
+
+    const links = Array.from(navEl.querySelectorAll<HTMLAnchorElement>(".nav-link"));
+    const handlers: Array<[HTMLAnchorElement, () => void, () => void]> = [];
+
+    const movePill = (link: HTMLAnchorElement) => {
+      const linkRect = link.getBoundingClientRect();
+      const navRect = navEl.getBoundingClientRect();
+      pillEl.style.opacity = "1";
+      pillEl.style.transform = `translate(${linkRect.left - navRect.left}px, ${linkRect.top - navRect.top}px)`;
+      pillEl.style.width = `${linkRect.width}px`;
+      pillEl.style.height = `${linkRect.height}px`;
+    };
+
+    const hidePill = () => {
+      pillEl.style.opacity = "0";
+    };
+
+    links.forEach((link) => {
+      const enter = () => movePill(link);
+      const leave = () => hidePill();
+      link.addEventListener("mouseenter", enter);
+      link.addEventListener("focus", enter);
+      link.addEventListener("mouseleave", leave);
+      link.addEventListener("blur", leave);
+      handlers.push([link, enter, leave]);
+    });
+    navEl.addEventListener("mouseleave", hidePill);
+
+    return () => {
+      handlers.forEach(([link, enter, leave]) => {
+        link.removeEventListener("mouseenter", enter);
+        link.removeEventListener("focus", enter);
+        link.removeEventListener("mouseleave", leave);
+        link.removeEventListener("blur", leave);
+      });
+      navEl.removeEventListener("mouseleave", hidePill);
+    };
+  }, []);
+
   return (
     <div className="landing-shell">
       <header className="topbar">
@@ -21,7 +67,8 @@ export function LandingPage() {
             <span className="brand-name">Roblex</span>
           </a>
 
-          <nav className="nav-links" aria-label="Primary">
+          <nav className="nav-links" aria-label="Primary" ref={navRef}>
+            <span className="nav-hover-pill" ref={pillRef} aria-hidden="true" />
             {navItems.map((item, idx) => (
               <a key={item} className={`nav-link ${idx === 0 ? "active" : ""}`} href="#">
                 {item}
