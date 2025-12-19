@@ -58,7 +58,10 @@ export function LoginPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const apiBase = "https://roblexsite-production.up.railway.app/api";
+  const apiBase =
+    import.meta.env.VITE_API_BASE_URL && import.meta.env.VITE_API_BASE_URL.length > 0
+      ? import.meta.env.VITE_API_BASE_URL.replace(/\/+$/, "")
+      : "https://roblexsite-production.up.railway.app/api";
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
