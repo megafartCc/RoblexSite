@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply m-0 min-h-screen bg-black text-white antialiased;
+    @apply m-0 min-h-screen bg-black text-slate-100 antialiased;
     font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
@@ -20,6 +20,43 @@
   .all-\[unset\] {
     all: unset;
   }
+}
+
+/* Color tokens for admin UI */
+:root {
+  --collection-1-background: rgba(247, 247, 247, 1);
+  --collection-1-buttons-glyphs: rgba(230, 230, 230, 1);
+  --collection-1-buttons-primary-default: rgba(21, 21, 21, 1);
+  --collection-1-buttons-stroke: rgba(46, 46, 46, 1);
+  --collection-1-glyphs-body: rgba(123, 127, 134, 1);
+  --collection-1-glyphs-title: rgba(21, 21, 21, 1);
+  --collection-1-impr-default: rgba(250, 250, 250, 1);
+  --collection-1-stroke: rgba(241, 241, 241, 1);
+  --collection-1-sub-default: rgba(255, 255, 255, 1);
+}
+
+[data-collection-1-mode="light"] {
+  --collection-1-background: rgba(247, 247, 247, 1);
+  --collection-1-buttons-glyphs: rgba(230, 230, 230, 1);
+  --collection-1-buttons-primary-default: rgba(21, 21, 21, 1);
+  --collection-1-buttons-stroke: rgba(46, 46, 46, 1);
+  --collection-1-glyphs-body: rgba(123, 127, 134, 1);
+  --collection-1-glyphs-title: rgba(21, 21, 21, 1);
+  --collection-1-impr-default: rgba(250, 250, 250, 1);
+  --collection-1-stroke: rgba(241, 241, 241, 1);
+  --collection-1-sub-default: rgba(255, 255, 255, 1);
+}
+
+[data-collection-1-mode="dark"] {
+  --collection-1-background: rgba(28, 32, 38, 1);
+  --collection-1-buttons-glyphs: rgba(21, 21, 21, 1);
+  --collection-1-buttons-primary-default: rgba(247, 247, 247, 1);
+  --collection-1-buttons-stroke: rgba(241, 241, 241, 1);
+  --collection-1-glyphs-body: rgba(141, 151, 166, 1);
+  --collection-1-glyphs-title: rgba(230, 230, 230, 1);
+  --collection-1-impr-default: rgba(29, 33, 39, 1);
+  --collection-1-stroke: rgba(38, 43, 52, 1);
+  --collection-1-sub-default: rgba(32, 36, 42, 1);
 }
 
 /* Toast animation (kept for admin) */
