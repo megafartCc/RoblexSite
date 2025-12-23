@@ -42,6 +42,75 @@ type UserRow = RowDataPacket & {
   two_factor_enabled: number;
 };
 
+export async function publicRegister(req: Request, res: Response) {
+  const parsed = registerSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    throw new HttpError("Invalid registration payload", 400);
+  }
+
+  const { email, password } = parsed.data;
+
+  const [existingRows] = await pool.query<UserRow[]>(
+    "SELECT id, role FROM users WHERE email = ? LIMIT 1",
+    [email],
+  );
+  if (existingRows[0]) {
+    throw new HttpError("Email already registered", 409);
+  }
+
+  const passwordHash = await bcrypt.hash(password, 12);
+
+  const [result] = await pool.query<any>(
+    "INSERT INTO users (email, password_hash, role) VALUES (?, ?, 'user')",
+    [email, passwordHash],
+  );
+
+  res.status(201).json({
+    ok: true,
+    userId: result.insertId,
+    message: "Registration successful. You can now log in.",
+  });
+}
+
+export async function publicLogin(req: Request, res: Response) {
+  const parsed = loginSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    throw new HttpError("Invalid credentials payload", 400);
+  }
+
+  const { email, password } = parsed.data;
+
+  const [rows] = await pool.query<UserRow[]>(
+    "SELECT id, email, password_hash, role, two_factor_enabled FROM users WHERE email = ? LIMIT 1",
+    [email],
+  );
+
+  const user = rows[0];
+
+  if (!user) {
+    throw new HttpError("Invalid email or password", 401);
+  }
+
+  const passwordMatches = await bcrypt.compare(password, user.password_hash);
+
+  if (!passwordMatches) {
+    throw new HttpError("Invalid email or password", 401);
+  }
+
+  if (user.role === "admin" || user.two_factor_enabled) {
+    throw new HttpError("Admin accounts must sign in at /admin/login", 403);
+  }
+
+  res.json({
+    ok: true,
+    userId: user.id,
+    isAdmin: false,
+    message: "Login successful",
+  });
+}
+
 export async function login(req: Request, res: Response) {
   const parsed = loginSchema.safeParse(req.body);
 
