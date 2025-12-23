@@ -7,7 +7,9 @@ function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<LandingPage initialMode="login" />} />
+        <Route path="/login" element={<LandingPage initialMode="login" />} />
+        <Route path="/register" element={<LandingPage initialMode="register" />} />
         <Route path="/admin/login" element={<LoginPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
